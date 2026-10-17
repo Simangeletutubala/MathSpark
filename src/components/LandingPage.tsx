@@ -1,93 +1,141 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
+import confetti from 'canvas-confetti';
 import { Logo } from './ui/Logo';
+import { SoundService } from '../services/SoundService';
+import { speechService } from '../services/SpeechService';
+import { Operation } from '../types';
+import { UserProfile } from '../services/ProgressService';
 import { 
-  ShieldCheck, 
-  Trophy, 
-  ChevronRight, 
+  Play, 
+  Sparkles, 
   Star, 
-  CheckCircle2,
-  Flag,
-  Target,
-  MessageCircle,
-  ChevronDown,
-  BarChart3,
-  Zap,
-  Heart,
-  Sparkles
+  Flame, 
+  Award, 
+  CheckCircle2, 
+  Volume2, 
+  ChevronRight, 
+  UserCheck, 
+  ShieldCheck, 
+  Zap, 
+  Heart, 
+  BookOpen, 
+  Layers, 
+  Clock, 
+  PieChart, 
+  HelpCircle,
+  ArrowRight
 } from 'lucide-react';
 
 interface LandingPageProps {
   onGetStarted: () => void;
-  onQuickPlay?: () => void;
+  onQuickPlay: () => void;
+  onParentPortal?: () => void;
+  onOpenTimesTable?: () => void;
+  onOpenDivisionTable?: () => void;
+  onSelectTopic?: (topic: Operation) => void;
+  existingProfile?: UserProfile | null;
 }
 
-export const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted, onQuickPlay }) => {
-  const [activeFaq, setActiveFaq] = useState<number | null>(null);
+const BUDDIES = [
+  { emoji: '🦁', name: 'Sparky the Lion', specialty: 'Times Tables & Bravery', color: 'from-amber-400 to-orange-500', quote: 'Roar! Math is an awesome adventure!' },
+  { emoji: '🐘', name: 'Ellie the Elephant', specialty: 'Big 4-Digit Numbers', color: 'from-blue-400 to-indigo-500', quote: 'Never forget place values!' },
+  { emoji: '🦏', name: 'Roly the Rhino', specialty: 'Fractions & Sharing', color: 'from-emerald-400 to-teal-500', quote: 'Crush tough math with steady steps!' },
+  { emoji: '🐆', name: 'Spotty the Cheetah', specialty: 'Speed Arithmetic', color: 'from-yellow-400 to-amber-500', quote: 'Fast and sharp mental math!' },
+  { emoji: '🐃', name: 'Benny the Buffalo', specialty: 'Word Problems & Money', color: 'from-purple-400 to-violet-500', quote: 'Strong together, solving every riddle!' },
+  { emoji: '🦓', name: 'Ziggy the Zebra', specialty: '2D Shapes & Symmetry', color: 'from-rose-400 to-pink-500', quote: 'Spotting patterns across the savanna!' },
+];
 
-  const testimonials = [
-    {
-      name: "Sipho M.",
-      location: "Johannesburg",
-      text: "My daughter was struggling with long division. Math Spark's step-by-step guidance made it click for her in one week!",
-      role: "Parent of Grade 4 Student"
-    },
-    {
-      name: "Tarryn L.",
-      location: "Cape Town",
-      text: "The local examples (Rands and Biltong) make math feel real. It's perfectly aligned with her CAPS workload.",
-      role: "Homeschooling Mother"
-    },
-    {
-      name: "Mr. Pillay",
-      location: "Durban",
-      text: "I recommend this to all my students. The Parent Portal gives me the exact data I need to help where they struggle.",
-      role: "Grade 4 Mathematics Teacher"
-    }
-  ];
+export const LandingPage: React.FC<LandingPageProps> = ({ 
+  onGetStarted, 
+  onQuickPlay,
+  onParentPortal,
+  onOpenTimesTable,
+  onOpenDivisionTable,
+  onSelectTopic,
+  existingProfile
+}) => {
+  const [selectedBuddyIndex, setSelectedBuddyIndex] = useState(0);
+  const [solvedSample, setSolvedSample] = useState(false);
+  const [sampleSelectedOption, setSampleSelectedOption] = useState<number | null>(null);
+  const [sampleError, setSampleError] = useState(false);
 
-  const faqs = [
-    {
-      q: "Is this strictly CAPS aligned?",
-      a: "Yes! Every quest and challenge is built according to the 2026 South African Grade 4 Mathematics ATP (Annual Teaching Plan)."
-    },
-    {
-      q: "How does the Parent Portal work?",
-      a: "Parents get a separate login to view detailed analytics, see weak areas, and even adjust difficulty levels to suit their child's pace."
-    },
-    {
-      q: "Can I use it on a tablet?",
-      a: "Absolutely! Math Spark is fully responsive and works perfectly on iPad, Android tablets, and smartphones."
-    },
-    {
-      q: "Is there a free version?",
-      a: "Yes, our Basic plan is free forever and covers all the core practice needs. No credit card required to start."
+  const currentBuddy = BUDDIES[selectedBuddyIndex];
+
+  const handleBuddyClick = (index: number) => {
+    setSelectedBuddyIndex(index);
+    SoundService.playTap(index);
+    speechService.speak(BUDDIES[index].quote);
+  };
+
+  const handleSampleAnswer = (option: number) => {
+    setSampleSelectedOption(option);
+    if (option === 40) {
+      setSolvedSample(true);
+      setSampleError(false);
+      SoundService.playCorrect();
+      confetti({
+        particleCount: 50,
+        spread: 60,
+        origin: { y: 0.7 }
+      });
+      speechService.speak('Lekker! Correct! 4 times 15 is 60, and 100 minus 60 is 40 Rands change!');
+    } else {
+      setSampleError(true);
+      SoundService.playIncorrect();
+      speechService.speak('Almost! Think: 4 packets at 15 Rands is 60 Rands. How much change from 100?');
     }
-  ];
+  };
 
   return (
-    <div className="min-h-screen bg-[#FDFDFF] text-gray-900 font-sans selection:bg-indigo-100 selection:text-indigo-900">
-      {/* Navigation Sticky Top Bar */}
-      <nav className="fixed top-0 left-0 w-full z-50 bg-white/80 backdrop-blur-xl border-b border-slate-100">
-        <div className="max-w-7xl mx-auto px-6 h-24 flex items-center justify-between">
-          <Logo size="sm" />
-          <div className="hidden md:flex items-center gap-10 text-[10px] font-black uppercase tracking-[0.3em] text-slate-400">
-            <a href="#how" className="hover:text-spark-primary transition-colors">Method</a>
-            <a href="#features" className="hover:text-spark-primary transition-colors">Features</a>
-            <a href="#pricing" className="hover:text-spark-primary transition-colors">Pricing</a>
+    <div className="min-h-screen bg-[#FDFDFF] text-slate-900 font-sans selection:bg-indigo-100 selection:text-indigo-900">
+      
+      {/* Top Banner: South Africa CAPS Badge */}
+      <div className="bg-slate-900 text-white py-2.5 px-4 text-center border-b border-slate-800">
+        <div className="max-w-7xl mx-auto flex items-center justify-center gap-2 text-xs font-black uppercase tracking-wider">
+          <span className="text-base">🇿🇦</span>
+          <span>100% South African CAPS Grade 4 Mathematics Curriculum</span>
+          <span className="hidden sm:inline text-amber-400">• Free & Instant Access</span>
+        </div>
+      </div>
+
+      {/* Main Sticky Navigation */}
+      <nav className="sticky top-0 left-0 w-full z-50 bg-white/90 backdrop-blur-xl border-b border-slate-100 shadow-xs">
+        <div className="max-w-7xl mx-auto px-4 sm:px-8 h-20 flex items-center justify-between">
+          <Logo size="md" />
+
+          {/* Center Links */}
+          <div className="hidden lg:flex items-center gap-8 text-xs font-black uppercase tracking-wider text-slate-500">
+            <a href="#buddies" className="hover:text-indigo-600 transition-colors">🦁 Safari Buddies</a>
+            <a href="#curriculum" className="hover:text-indigo-600 transition-colors">📚 CAPS Topics</a>
+            <a href="#tables" className="hover:text-indigo-600 transition-colors">✖️ Tables</a>
+            <a href="#features" className="hover:text-indigo-600 transition-colors">✨ Features</a>
+            <a href="#parents" className="hover:text-indigo-600 transition-colors">👨‍👩‍👧 Parents</a>
           </div>
-          <div className="flex items-center gap-3">
-            {onQuickPlay && (
-              <button 
-                onClick={onQuickPlay}
-                className="px-5 py-3 bg-emerald-500 text-white text-[11px] font-black uppercase tracking-wider rounded-2xl hover:bg-emerald-600 transition-all active:scale-95 shadow-md flex items-center gap-1.5"
+
+          {/* Action Buttons */}
+          <div className="flex items-center gap-2 sm:gap-3">
+            {onParentPortal && (
+              <button
+                onClick={onParentPortal}
+                className="hidden sm:flex items-center gap-2 px-4 py-2.5 bg-slate-100 text-slate-700 rounded-2xl hover:bg-slate-200 transition-all font-black text-xs uppercase tracking-wider"
               >
-                <span>🚀 Play Now</span>
+                <UserCheck className="w-4 h-4 text-indigo-600" />
+                <span>Parent Portal</span>
               </button>
             )}
-            <button 
+
+            <button
+              onClick={onQuickPlay}
+              className="px-5 sm:px-6 py-2.5 sm:py-3 bg-gradient-to-r from-emerald-500 to-teal-600 text-white rounded-2xl font-black text-xs sm:text-sm uppercase tracking-wider shadow-md hover:brightness-105 active:scale-95 transition-all flex items-center gap-2 border-b-4 border-emerald-700"
+            >
+              <Play className="w-4 h-4 fill-white" />
+              <span>{existingProfile?.buddyData ? 'Resume Game' : 'Play Now'}</span>
+            </button>
+
+            <button
               onClick={onGetStarted}
-              className="px-6 py-3 bg-slate-900 text-white text-[11px] font-black uppercase tracking-widest rounded-2xl hover:bg-slate-800 transition-all active:scale-95 shadow-premium"
+              className="px-4 sm:px-5 py-2.5 sm:py-3 bg-slate-900 text-white rounded-2xl font-black text-xs sm:text-sm uppercase tracking-wider hover:bg-slate-800 active:scale-95 transition-all shadow-sm"
             >
               Sign In
             </button>
@@ -95,411 +143,631 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted, onQuickP
         </div>
       </nav>
 
-      <section className="relative pt-48 pb-24 px-6 overflow-hidden">
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[1400px] h-[1000px] bg-spark-primary/5 rounded-full blur-[140px] opacity-40 -z-10" />
-        
-        <div className="max-w-7xl mx-auto grid lg:grid-cols-2 gap-20 items-center">
-          <div className="text-center lg:text-left">
-            <motion.div
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              className="inline-flex items-center gap-2 px-5 py-2.5 bg-emerald-50 text-emerald-600 rounded-full text-[10px] sm:text-xs font-black uppercase tracking-widest mb-10 border border-emerald-100"
-            >
-              <Flag className="w-4 h-4 fill-emerald-600" />
-              100% CAPS 2026 Aligned 🇿🇦
-            </motion.div>
+      {/* Hero Section */}
+      <section className="relative pt-12 pb-20 sm:pt-16 sm:pb-28 px-4 sm:px-8 overflow-hidden">
+        {/* Soft colorful background glow */}
+        <div className="absolute top-10 left-1/2 -translate-x-1/2 w-[900px] h-[500px] bg-gradient-to-tr from-indigo-500/10 via-purple-500/10 to-amber-500/10 rounded-full blur-[100px] -z-10 pointer-events-none" />
+
+        <div className="max-w-7xl mx-auto grid lg:grid-cols-12 gap-12 lg:gap-8 items-center">
+          
+          {/* Left Column: Headline and Call-to-actions */}
+          <div className="lg:col-span-7 text-center lg:text-left space-y-6">
             
-            <motion.h1
-              initial={{ opacity: 0, y: 30 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6 }}
-              className="text-7xl sm:text-8xl xl:text-[10rem] font-black tracking-tighter leading-[0.8] mb-10 text-slate-900"
-            >
-              Math <br />
-              With A <br />
-              <span className="premium-gradient bg-clip-text text-transparent italic">Soul.</span>
-            </motion.h1>
-            
-            <motion.p
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.1 }}
-              className="text-xl sm:text-2xl text-slate-400 font-bold max-w-xl mx-auto lg:mx-0 mb-14 leading-relaxed"
-            >
-              The digital tutor that feels like family. Local word problems, smart tracking, and a buddy that never stops cheering.
-            </motion.p>
-            
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.2 }}
-              className="flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-4"
-            >
-              {onQuickPlay && (
+            <div className="inline-flex items-center gap-2 px-4 py-2 bg-amber-50 text-amber-700 border border-amber-200 rounded-full text-xs font-black uppercase tracking-wider shadow-xs">
+              <Star className="w-4 h-4 fill-amber-400 text-amber-500" />
+              <span>South Africa's Fun Math Companion</span>
+            </div>
+
+            <h1 className="text-4xl sm:text-6xl xl:text-7xl font-black tracking-tight text-slate-900 leading-[1.05]">
+              Turn Grade 4 Math <br />
+              Into An <span className="bg-gradient-to-r from-spark-primary via-spark-secondary to-spark-accent bg-clip-text text-transparent">Epic Adventure! 🇿🇦</span>
+            </h1>
+
+            <p className="text-lg sm:text-xl text-slate-600 font-medium max-w-xl mx-auto lg:mx-0 leading-relaxed">
+              Step into the African savanna with your Big Five Safari Buddy. Master times tables, fractions, 4-digit column addition, and biltong word problems with zero math anxiety!
+            </p>
+
+            {/* Quick Resume banner if guest profile exists */}
+            {existingProfile?.buddyData && (
+              <div className="p-4 bg-emerald-50 border-2 border-emerald-200 rounded-2xl flex items-center justify-between max-w-lg mx-auto lg:mx-0 shadow-xs">
+                <div className="flex items-center gap-3">
+                  <div className="text-3xl p-1 bg-white rounded-xl shadow-xs border border-emerald-100">
+                    {existingProfile.buddyData.avatar}
+                  </div>
+                  <div className="text-left">
+                    <p className="font-black text-emerald-900 text-sm">Welcome back, {existingProfile.buddyData.name}!</p>
+                    <p className="text-emerald-700 text-xs font-bold flex items-center gap-1">
+                      <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-500" />
+                      {existingProfile.buddyData.stars} stars • {existingProfile.buddyData.dailyLearningStreak || 1} day streak
+                    </p>
+                  </div>
+                </div>
                 <button
                   onClick={onQuickPlay}
-                  className="w-full sm:w-auto px-10 py-6 bg-gradient-to-r from-emerald-500 to-teal-600 text-white text-xl sm:text-2xl font-black rounded-3xl shadow-xl border-b-6 border-emerald-700 hover:brightness-105 transition-all hover:translate-y-[-3px] flex items-center justify-center gap-3"
+                  className="px-4 py-2 bg-emerald-600 text-white rounded-xl font-black text-xs uppercase tracking-wider hover:bg-emerald-700 transition-all flex items-center gap-1.5"
                 >
-                  <span>🚀 Instant Play (Learner)</span>
+                  <span>Continue</span>
+                  <ArrowRight className="w-3.5 h-3.5" />
                 </button>
-              )}
-              <button
-                onClick={onGetStarted}
-                className="w-full sm:w-auto px-8 py-6 bg-slate-900 text-white text-xl sm:text-2xl font-black rounded-3xl shadow-premium border-b-6 border-slate-700 hover:bg-slate-800 transition-all hover:translate-y-[-3px] flex items-center justify-center gap-3"
-              >
-                <span>Sign In / Register</span>
-                <ChevronRight className="w-5 h-5" />
-              </button>
-            </motion.div>
-          </div>
-
-          {/* App Preview Mockup */}
-          <motion.div
-            initial={{ opacity: 0, x: 50, rotate: 2 }}
-            animate={{ opacity: 1, x: 0, rotate: 0 }}
-            transition={{ duration: 0.8 }}
-            className="relative hidden lg:block"
-          >
-            <div className="absolute -inset-4 bg-gradient-to-tr from-indigo-500 via-purple-500 to-pink-500 rounded-[3rem] blur-3xl opacity-20 -z-10 animate-pulse" />
-            <div className="bg-white p-8 rounded-[3.5rem] shadow-[0_50px_100px_rgba(0,0,0,0.1)] border-8 border-gray-50 max-w-lg mx-auto">
-              <div className="bg-indigo-50 p-6 rounded-[2.5rem] mb-6 border-b-4 border-indigo-100">
-                <div className="flex justify-between items-center mb-6">
-                  <div className="flex gap-2">
-                    <div className="w-3 h-3 rounded-full bg-rose-400" />
-                    <div className="w-3 h-3 rounded-full bg-amber-400" />
-                    <div className="w-3 h-3 rounded-full bg-emerald-400" />
-                  </div>
-                  <div className="px-3 py-1 bg-white rounded-full text-[10px] font-black uppercase text-indigo-600">Question 3/5</div>
-                </div>
-                <div className="text-center py-12">
-                  <p className="text-sm font-black text-indigo-400 uppercase tracking-widest mb-2">Math Quest</p>
-                  <h3 className="text-4xl font-black text-gray-900 leading-tight">What is<br/>453 + 287?</h3>
-                </div>
               </div>
-              <div className="flex items-center gap-4 bg-gray-50 p-6 rounded-3xl border-2 border-gray-100">
-                <div className="w-16 h-16 bg-white rounded-2xl shadow-sm flex items-center justify-center text-4xl border-b-2 border-gray-200">🦁</div>
-                <div>
-                  <p className="text-indigo-600 font-black text-xl">"You got this!"</p>
-                  <p className="text-xs text-gray-400 font-bold">Your Math Buddy</p>
-                </div>
+            )}
+
+            {/* Main Action Buttons */}
+            <div className="flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-4 pt-2">
+              <motion.button
+                whileHover={{ scale: 1.02, translateY: -2 }}
+                whileTap={{ scale: 0.98 }}
+                onClick={() => {
+                  SoundService.playTap(0);
+                  onQuickPlay();
+                }}
+                className="w-full sm:w-auto px-8 sm:px-10 py-5 bg-gradient-to-r from-emerald-500 to-teal-600 text-white rounded-[2rem] font-black text-lg sm:text-xl shadow-xl shadow-emerald-500/20 hover:brightness-105 active:scale-95 transition-all flex items-center justify-center gap-3 border-b-6 border-emerald-700"
+              >
+                <Play className="w-6 h-6 fill-white" />
+                <span>Start Learning (Instant Play)</span>
+              </motion.button>
+
+              <motion.button
+                whileHover={{ scale: 1.02, translateY: -2 }}
+                whileTap={{ scale: 0.98 }}
+                onClick={() => {
+                  SoundService.playTap(1);
+                  if (onOpenTimesTable) onOpenTimesTable();
+                  else onQuickPlay();
+                }}
+                className="w-full sm:w-auto px-8 py-5 bg-white text-slate-800 border-2 border-slate-200 rounded-[2rem] font-black text-lg shadow-sm hover:bg-slate-50 transition-all flex items-center justify-center gap-2 border-b-4 border-slate-300"
+              >
+                <span>✖️ Times Tables</span>
+              </motion.button>
+            </div>
+
+            {/* Quick trust metrics */}
+            <div className="grid grid-cols-3 gap-4 pt-4 max-w-lg mx-auto lg:mx-0 border-t border-slate-100">
+              <div className="text-center lg:text-left">
+                <p className="text-2xl font-black text-slate-900">100%</p>
+                <p className="text-[11px] font-black text-slate-400 uppercase tracking-wider">CAPS 2026</p>
+              </div>
+              <div className="text-center lg:text-left">
+                <p className="text-2xl font-black text-emerald-600">Free</p>
+                <p className="text-[11px] font-black text-slate-400 uppercase tracking-wider">No Paywalls</p>
+              </div>
+              <div className="text-center lg:text-left">
+                <p className="text-2xl font-black text-indigo-600">Grade 4</p>
+                <p className="text-[11px] font-black text-slate-400 uppercase tracking-wider">Ages 9 - 10</p>
               </div>
             </div>
-          </motion.div>
+
+          </div>
+
+          {/* Right Column: Interactive Live Math Challenge Card */}
+          <div className="lg:col-span-5">
+            <div className="bg-white rounded-[3rem] p-6 sm:p-8 shadow-2xl border-4 border-indigo-100 relative">
+              
+              {/* Safari Buddy Header on Card */}
+              <div className="flex items-center justify-between pb-6 border-b border-slate-100">
+                <div className="flex items-center gap-3">
+                  <motion.div 
+                    key={currentBuddy.emoji}
+                    animate={{ rotate: [0, 8, -8, 0], scale: [1, 1.1, 1] }}
+                    transition={{ duration: 0.5 }}
+                    className="w-16 h-16 bg-amber-50 rounded-2xl flex items-center justify-center text-4xl shadow-sm border border-amber-200/60"
+                  >
+                    {currentBuddy.emoji}
+                  </motion.div>
+                  <div>
+                    <h3 className="font-black text-slate-900 text-lg leading-tight">{currentBuddy.name}</h3>
+                    <p className="text-xs font-bold text-amber-600">{currentBuddy.specialty}</p>
+                  </div>
+                </div>
+
+                <button
+                  onClick={() => speechService.speak(currentBuddy.quote)}
+                  className="p-3 bg-indigo-50 text-indigo-600 rounded-2xl hover:bg-indigo-100 transition-colors"
+                  title="Listen to buddy"
+                >
+                  <Volume2 className="w-5 h-5" />
+                </button>
+              </div>
+
+              {/* Buddy Switcher Pills */}
+              <div className="py-4">
+                <p className="text-[11px] font-black text-slate-400 uppercase tracking-wider mb-2">
+                  Tap to choose your Safari Buddy:
+                </p>
+                <div className="flex justify-between gap-1.5">
+                  {BUDDIES.map((b, idx) => (
+                    <button
+                      key={b.name}
+                      onClick={() => handleBuddyClick(idx)}
+                      className={`text-2xl p-2.5 rounded-2xl border-2 transition-all ${
+                        selectedBuddyIndex === idx 
+                          ? 'border-indigo-600 bg-indigo-50 scale-110 shadow-sm' 
+                          : 'border-slate-100 bg-slate-50 hover:bg-white'
+                      }`}
+                      title={b.name}
+                    >
+                      {b.emoji}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Live Interactive Sample Question */}
+              <div className="bg-indigo-50/70 p-5 rounded-2xl border-2 border-indigo-100 my-2">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="px-2.5 py-1 bg-indigo-600 text-white rounded-full text-[10px] font-black uppercase tracking-wider">
+                    Safari Quest
+                  </span>
+                  <span className="text-xs font-black text-indigo-700 flex items-center gap-1">
+                    <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-500" />
+                    +10 Stars
+                  </span>
+                </div>
+
+                <p className="text-slate-800 font-bold text-sm sm:text-base leading-snug">
+                  "Sipho buys <strong>4 packets of biltong</strong> for <strong>R15 each</strong>. He pays with a <strong>R100 note</strong>. How much change does he get?"
+                </p>
+              </div>
+
+              {/* Options */}
+              <div className="grid grid-cols-2 gap-3 mt-4">
+                {[
+                  { val: 60, label: 'R60' },
+                  { val: 40, label: 'R40 (Correct)' },
+                  { val: 45, label: 'R45' },
+                  { val: 25, label: 'R25' }
+                ].map((opt) => {
+                  const isChosen = sampleSelectedOption === opt.val;
+                  const isCorrect = opt.val === 40;
+                  return (
+                    <motion.button
+                      key={opt.val}
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
+                      onClick={() => handleSampleAnswer(opt.val)}
+                      className={`p-4 rounded-2xl font-black text-lg transition-all border-2 text-center shadow-xs ${
+                        isChosen && isCorrect
+                          ? 'bg-emerald-500 text-white border-emerald-600 shadow-emerald-200'
+                          : isChosen && !isCorrect
+                          ? 'bg-rose-100 text-rose-700 border-rose-300'
+                          : 'bg-white text-slate-800 border-slate-200 hover:border-indigo-400'
+                      }`}
+                    >
+                      {opt.val === 40 ? 'R40' : opt.label}
+                    </motion.button>
+                  );
+                })}
+              </div>
+
+              {/* Feedback banner */}
+              {solvedSample && (
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.9 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  className="mt-4 p-4 bg-emerald-50 border border-emerald-200 rounded-2xl flex items-center justify-between"
+                >
+                  <div className="flex items-center gap-2">
+                    <CheckCircle2 className="w-5 h-5 text-emerald-600" />
+                    <p className="text-xs font-black text-emerald-900">Brilliant! 4 × R15 = R60, R100 - R60 = R40</p>
+                  </div>
+                  <button
+                    onClick={onQuickPlay}
+                    className="px-3 py-1.5 bg-emerald-600 text-white rounded-xl text-xs font-black uppercase tracking-wider hover:bg-emerald-700 transition-colors shrink-0"
+                  >
+                    Play Quests 🚀
+                  </button>
+                </motion.div>
+              )}
+
+              {sampleError && (
+                <p className="text-xs font-bold text-rose-500 mt-2 text-center">
+                  💡 Hint: 4 packets × R15 = R60 total spent. Subtract R60 from R100!
+                </p>
+              )}
+
+            </div>
+          </div>
+
         </div>
       </section>
 
-      {/* Trust Bar */}
-      <section className="py-12 border-y border-gray-50 bg-white shadow-sm overflow-hidden flex justify-center">
-        <div className="flex items-center gap-12 sm:gap-24 grayscale opacity-40 overflow-hidden">
-           <span className="text-xl font-black italic tracking-tighter whitespace-nowrap">REDHILL SCHOOL</span>
-           <span className="text-xl font-black italic tracking-tighter whitespace-nowrap">CURRO</span>
-           <span className="text-xl font-black italic tracking-tighter whitespace-nowrap">ADVTTECH</span>
-           <span className="text-xl font-black italic tracking-tighter whitespace-nowrap">ST STITHIANS</span>
-           <span className="text-xl font-black italic tracking-tighter whitespace-nowrap lg:inline hidden">HERITAGE ACADEMY</span>
+      {/* Meet The Big Five Safari Buddies Section */}
+      <section id="buddies" className="py-20 bg-slate-50/60 border-y border-slate-100 px-4 sm:px-8">
+        <div className="max-w-7xl mx-auto">
+          <div className="text-center max-w-2xl mx-auto mb-14 space-y-3">
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-amber-100 text-amber-800 rounded-full text-xs font-black uppercase tracking-wider">
+              <span>🦁 Friendly Learning Companions</span>
+            </div>
+            <h2 className="text-3xl sm:text-5xl font-black text-slate-900 tracking-tight">
+              Meet Your Big Five Math Buddies
+            </h2>
+            <p className="text-base sm:text-lg text-slate-600 font-medium">
+              Every learner chooses a buddy that cheers for them, celebrates streaks, and gives gentle hints when questions get tricky.
+            </p>
+          </div>
+
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            {BUDDIES.map((buddy, i) => (
+              <motion.div
+                key={buddy.name}
+                whileHover={{ translateY: -4 }}
+                className="bg-white p-6 rounded-3xl border-2 border-slate-100 shadow-sm hover:shadow-md transition-all flex flex-col justify-between group"
+              >
+                <div>
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="text-5xl p-3 bg-slate-50 rounded-2xl group-hover:scale-110 transition-transform">
+                      {buddy.emoji}
+                    </div>
+                    <button
+                      onClick={() => {
+                        SoundService.playTap(i);
+                        speechService.speak(buddy.quote);
+                      }}
+                      className="p-2.5 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-xl transition-colors"
+                      title="Speak"
+                    >
+                      <Volume2 className="w-5 h-5" />
+                    </button>
+                  </div>
+                  <h3 className="text-xl font-black text-slate-900 mb-1">{buddy.name}</h3>
+                  <p className="text-xs font-black uppercase tracking-wider text-indigo-600 mb-3">{buddy.specialty}</p>
+                  <p className="text-sm text-slate-600 font-medium italic">"{buddy.quote}"</p>
+                </div>
+
+                <div className="mt-6 pt-4 border-t border-slate-100 flex items-center justify-between">
+                  <span className="text-[11px] font-black text-slate-400 uppercase tracking-wider">Safari Grade 4</span>
+                  <button
+                    onClick={() => {
+                      setSelectedBuddyIndex(i);
+                      onQuickPlay();
+                    }}
+                    className="text-xs font-black text-indigo-600 hover:text-indigo-800 flex items-center gap-1"
+                  >
+                    <span>Play With {buddy.name.split(' ')[0]}</span>
+                    <ChevronRight className="w-4 h-4" />
+                  </button>
+                </div>
+              </motion.div>
+            ))}
+          </div>
         </div>
       </section>
 
-      {/* How It Works Section */}
-      <section id="how" className="py-32 bg-gray-50/30">
-        <div className="max-w-7xl mx-auto px-6">
-          <div className="text-center mb-20">
-            <h2 className="text-4xl sm:text-7xl font-black tracking-tight mb-4">How it works.</h2>
-            <p className="text-xl text-gray-500 font-bold">Turning math into an adventure in 3 easy steps.</p>
+      {/* CAPS Curriculum Topics Section */}
+      <section id="curriculum" className="py-20 px-4 sm:px-8">
+        <div className="max-w-7xl mx-auto">
+          <div className="text-center max-w-2xl mx-auto mb-14 space-y-3">
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-emerald-100 text-emerald-800 rounded-full text-xs font-black uppercase tracking-wider">
+              <span>📚 2026 CAPS Aligned</span>
+            </div>
+            <h2 className="text-3xl sm:text-5xl font-black text-slate-900 tracking-tight">
+              Grade 4 Math Topics Built Step-by-Step
+            </h2>
+            <p className="text-base sm:text-lg text-slate-600 font-medium">
+              From Term 1 to Term 4, every topic follows the South African Annual Teaching Plan with localized examples.
+            </p>
+          </div>
+
+          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            {[
+              {
+                title: '➕ Addition & Subtraction',
+                desc: 'Up to 4-digit numbers with carrying and borrowing, breaking down numbers, and quick mental math.',
+                topic: Operation.ADDITION,
+                color: 'bg-emerald-50 text-emerald-700 border-emerald-200'
+              },
+              {
+                title: '✖️ Times Tables (1-12×)',
+                desc: 'Master the 2× to 12× times tables with visual arrays, speed rounds, and memory strategies.',
+                topic: Operation.MULTIPLICATION_TABLE,
+                color: 'bg-purple-50 text-purple-700 border-purple-200'
+              },
+              {
+                title: '➗ Division & Sharing',
+                desc: 'Equal sharing baskets, remainders, and long division steps with real-life biltong and sweets.',
+                topic: Operation.DIVISION,
+                color: 'bg-orange-50 text-orange-700 border-orange-200'
+              },
+              {
+                title: '🍕 Fractions & Pizzas',
+                desc: 'Halves, thirds, quarters, and eighths with visual shaded shapes and comparing fractions.',
+                topic: Operation.FRACTIONS,
+                color: 'bg-pink-50 text-pink-700 border-pink-200'
+              },
+              {
+                title: '💵 Money & Change',
+                desc: 'South African Rands (R) and cents (c), shopping bills, calculating change, and savings.',
+                topic: Operation.NUMBER_SENTENCES,
+                color: 'bg-amber-50 text-amber-700 border-amber-200'
+              },
+              {
+                title: '⏰ Time & Clocks',
+                desc: 'Analog clocks, digital 24-hour time, hours, minutes, seconds, and reading timetables.',
+                topic: Operation.TIME,
+                color: 'bg-indigo-50 text-indigo-700 border-indigo-200'
+              },
+              {
+                title: '📐 Shapes & Space',
+                desc: '2D shapes, 3D geometric objects, sides, vertices, perimeter, and area grid counting.',
+                topic: Operation.SHAPES_2D,
+                color: 'bg-teal-50 text-teal-700 border-teal-200'
+              },
+              {
+                title: '📊 Data & Patterns',
+                desc: 'Bar graphs, tally charts, number patterns, repeating sequences, and finding the rule.',
+                topic: Operation.PATTERNS,
+                color: 'bg-blue-50 text-blue-700 border-blue-200'
+              }
+            ].map((card) => (
+              <div 
+                key={card.title}
+                className="bg-white p-6 rounded-3xl border-2 border-slate-100 shadow-sm flex flex-col justify-between hover:border-indigo-300 transition-all group"
+              >
+                <div>
+                  <h3 className="text-lg font-black text-slate-900 mb-2">{card.title}</h3>
+                  <p className="text-xs text-slate-600 font-medium leading-relaxed">{card.desc}</p>
+                </div>
+                <div className="mt-6 pt-4 border-t border-slate-100">
+                  <button
+                    onClick={() => {
+                      if (onSelectTopic) onSelectTopic(card.topic);
+                      else onQuickPlay();
+                    }}
+                    className="w-full py-2.5 bg-slate-50 hover:bg-indigo-50 text-slate-700 hover:text-indigo-600 rounded-xl text-xs font-black uppercase tracking-wider transition-colors flex items-center justify-center gap-1"
+                  >
+                    <span>Practice Topic</span>
+                    <ChevronRight className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+
+        </div>
+      </section>
+
+      {/* Times & Division Table Quick Launch Highlight */}
+      <section id="tables" className="py-16 bg-gradient-to-br from-indigo-900 via-slate-900 to-purple-950 text-white px-4 sm:px-8">
+        <div className="max-w-7xl mx-auto grid md:grid-cols-2 gap-8 items-center">
+          <div>
+            <div className="inline-flex items-center gap-2 px-3 py-1 bg-white/10 rounded-full text-xs font-black uppercase tracking-wider text-amber-300 mb-4">
+              <Zap className="w-4 h-4 fill-current" />
+              <span>Times Tables Superpower</span>
+            </div>
+            <h2 className="text-3xl sm:text-5xl font-black tracking-tight mb-4">
+              Master 1× to 12× Tables with Instant Feedback
+            </h2>
+            <p className="text-indigo-200 font-medium text-base mb-8 leading-relaxed">
+              Grade 4 learners who know their times tables unlock speed in division, fractions, and word problems. Use our interactive grids to practice row by row.
+            </p>
+
+            <div className="flex flex-wrap gap-4">
+              <button
+                onClick={() => {
+                  if (onOpenTimesTable) onOpenTimesTable();
+                  else onQuickPlay();
+                }}
+                className="px-6 py-3.5 bg-amber-400 hover:bg-amber-300 text-slate-950 font-black rounded-2xl text-sm uppercase tracking-wider transition-all flex items-center gap-2 shadow-lg"
+              >
+                <span>✖️ Open Times Tables Grid</span>
+              </button>
+              <button
+                onClick={() => {
+                  if (onOpenDivisionTable) onOpenDivisionTable();
+                  else onQuickPlay();
+                }}
+                className="px-6 py-3.5 bg-white/10 hover:bg-white/20 text-white font-black rounded-2xl text-sm uppercase tracking-wider transition-all flex items-center gap-2 border border-white/20"
+              >
+                <span>➗ Open Division Tables</span>
+              </button>
+            </div>
+          </div>
+
+          {/* Mini Interactive Times Table Preview */}
+          <div className="bg-white/10 backdrop-blur-md p-6 sm:p-8 rounded-[2.5rem] border border-white/15">
+            <h4 className="text-lg font-black text-amber-300 mb-4 flex items-center gap-2">
+              <span>⚡ Rapid Table Quick Tap: 7× Table</span>
+            </h4>
+            <div className="grid grid-cols-4 gap-2.5">
+              {[
+                { q: '7 × 2', a: 14 },
+                { q: '7 × 3', a: 21 },
+                { q: '7 × 5', a: 35 },
+                { q: '7 × 6', a: 42 },
+                { q: '7 × 7', a: 49 },
+                { q: '7 × 8', a: 56 },
+                { q: '7 × 9', a: 63 },
+                { q: '7 × 12', a: 84 },
+              ].map((item, idx) => (
+                <button
+                  key={item.q}
+                  onClick={() => {
+                    SoundService.playTap(idx);
+                    speechService.speak(`${item.q} equals ${item.a}`);
+                  }}
+                  className="p-3 bg-white/10 hover:bg-amber-400 hover:text-slate-900 rounded-xl text-center transition-colors group"
+                >
+                  <p className="text-xs font-bold text-indigo-200 group-hover:text-slate-900">{item.q}</p>
+                  <p className="text-base font-black text-white group-hover:text-slate-900">{item.a}</p>
+                </button>
+              ))}
+            </div>
+            <p className="text-xs text-indigo-300 mt-4 text-center font-medium">
+              Tap any card to hear the times table aloud with speech synthesis!
+            </p>
+          </div>
+        </div>
+      </section>
+
+      {/* Features: Built for Real South African Kids */}
+      <section id="features" className="py-20 px-4 sm:px-8 bg-slate-50/50">
+        <div className="max-w-7xl mx-auto">
+          <div className="text-center max-w-2xl mx-auto mb-16 space-y-3">
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-indigo-100 text-indigo-800 rounded-full text-xs font-black uppercase tracking-wider">
+              <span>💡 Thoughtful Learning Design</span>
+            </div>
+            <h2 className="text-3xl sm:text-5xl font-black text-slate-900 tracking-tight">
+              Why MathSpark Makes Math Click
+            </h2>
+            <p className="text-base sm:text-lg text-slate-600 font-medium">
+              We took everything kids find frustrating about worksheets and replaced it with encouragement, concrete visuals, and South African stories.
+            </p>
           </div>
 
           <div className="grid md:grid-cols-3 gap-8">
-            {[
-              {
-                step: "01",
-                icon: <Heart className="text-rose-500" />,
-                title: "Choose Your Buddy",
-                desc: "From robots to kittens, every learner picks a buddy that grows and levels up with them."
-              },
-              {
-                step: "02",
-                icon: <Target className="text-indigo-500" />,
-                title: "Master CAPS Quests",
-                desc: "Adaptive questions focus on Grade 4 ZA curriculum. Struggling? Your buddy gives hints!"
-              },
-              {
-                step: "03",
-                icon: <Trophy className="text-amber-500" />,
-                title: "Collect & Dominate",
-                desc: "Earn stars, unlock new shop items, and build a consistent daily learning streak."
-              }
-            ].map((s, i) => (
-              <div key={i} className="group relative p-10 bg-white rounded-[3rem] shadow-xl shadow-gray-200/50 border-4 border-white hover:border-indigo-100 transition-all">
-                <div className="absolute top-8 right-8 text-4xl font-black text-gray-100 group-hover:text-indigo-50 transition-colors uppercase">{s.step}</div>
-                <div className="w-16 h-16 bg-gray-50 rounded-2xl flex items-center justify-center mb-8 group-hover:scale-110 transition-all">
-                  {React.cloneElement(s.icon as any, { className: "w-8 h-8" })}
-                </div>
-                <h3 className="text-2xl font-black text-gray-900 mb-4">{s.title}</h3>
-                <p className="text-gray-500 font-bold leading-relaxed">{s.desc}</p>
+            <div className="bg-white p-8 rounded-3xl border-2 border-slate-100 shadow-sm space-y-4">
+              <div className="w-14 h-14 bg-emerald-100 text-emerald-600 rounded-2xl flex items-center justify-center text-2xl font-black">
+                🇿🇦
               </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Why MathSpark Section */}
-      <section id="features" className="py-32 overflow-hidden">
-        <div className="max-w-7xl mx-auto px-6">
-          <div className="flex flex-col lg:flex-row gap-20 items-center">
-            <div className="lg:w-1/2">
-              <h2 className="text-4xl sm:text-7xl font-black tracking-tight mb-8">
-                Designed for the <br />
-                <span className="text-indigo-600">SA Classroom.</span>
-              </h2>
-              
-              <div className="space-y-8">
-                {[
-                  {
-                    icon: <CheckCircle2 className="text-emerald-500" />,
-                    title: "Localized Context",
-                    desc: "Word problems about Rands, biltong, and cricket. No weird overseas examples to confuse them."
-                  },
-                  {
-                    icon: <ShieldCheck className="text-blue-500" />,
-                    title: "Parent Intelligence",
-                    desc: "Weekly reports via email. See exactly what your child is mastering and where they need a boost."
-                  },
-                  {
-                    icon: <Sparkles className="text-purple-500" />,
-                    title: "Magic Hints & Tutoring",
-                    desc: "Our smart system detects struggles and provides step-by-step explanations instantly."
-                  }
-                ].map((item, i) => (
-                  <div key={i} className="flex gap-6">
-                    <div className="w-12 h-12 bg-gray-50 rounded-xl flex items-center justify-center shrink-0 border-b-2 border-gray-100">
-                      {item.icon}
-                    </div>
-                    <div>
-                      <h4 className="text-lg font-black text-gray-900 mb-1">{item.title}</h4>
-                      <p className="text-gray-500 font-bold text-sm leading-relaxed">{item.desc}</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
+              <h3 className="text-xl font-black text-slate-900">Proudly South African Context</h3>
+              <p className="text-sm text-slate-600 font-medium leading-relaxed">
+                Word problems about Rands, 50c coins, biltong packets, rugby matches, and Kruger park game drives. No alien currency or confusing foreign terms!
+              </p>
             </div>
-            
-            <div className="lg:w-1/2 grid grid-cols-2 gap-4">
-              <div className="pt-12 space-y-4">
-                <div className="aspect-square bg-indigo-600 rounded-[2rem] flex flex-col items-center justify-center text-white p-6 shadow-2xl shadow-indigo-200 border-b-8 border-indigo-800">
-                  <BarChart3 className="w-12 h-12 mb-4" />
-                  <p className="text-sm font-black uppercase text-center tracking-widest">Adaptive Logic</p>
-                </div>
-                <div className="aspect-[4/3] bg-emerald-50 rounded-[2rem] border-2 border-emerald-100 flex flex-col items-center justify-center p-6">
-                  <p className="text-4xl font-black text-emerald-600 mb-1">92%</p>
-                  <p className="text-[10px] font-black text-emerald-400 uppercase tracking-widest text-center">Score Mastery</p>
-                </div>
+
+            <div className="bg-white p-8 rounded-3xl border-2 border-slate-100 shadow-sm space-y-4">
+              <div className="w-14 h-14 bg-indigo-100 text-indigo-600 rounded-2xl flex items-center justify-center text-2xl">
+                🎨
               </div>
-              <div className="space-y-4">
-                <div className="aspect-[4/3] bg-amber-50 rounded-[2rem] border-2 border-amber-100 flex flex-col items-center justify-center p-6">
-                  <p className="text-4xl font-black text-amber-600 mb-1">R199</p>
-                  <p className="text-[10px] font-black text-amber-400 uppercase tracking-widest text-center">Lifetime Pro</p>
-                </div>
-                <div className="aspect-square bg-rose-50 rounded-[2rem] border-2 border-rose-100 flex flex-col items-center justify-center p-6 relative overflow-hidden">
-                  <div className="absolute inset-0 bg-rose-200/20 blur-xl opacity-0 group-hover:opacity-100 transition-opacity" />
-                  <Heart className="w-12 h-12 text-rose-500 mb-4 fill-rose-500 relative z-10" />
-                  <p className="text-xs font-black text-rose-400 uppercase text-center relative z-10">Made in SA 🇿🇦</p>
-                </div>
+              <h3 className="text-xl font-black text-slate-900">Interactive Visual Aids</h3>
+              <p className="text-sm text-slate-600 font-medium leading-relaxed">
+                Tap-to-count apples and blocks, shaded fraction circles, number lines, and place value cubes make abstract numbers visual and tangible.
+              </p>
+            </div>
+
+            <div className="bg-white p-8 rounded-3xl border-2 border-slate-100 shadow-sm space-y-4">
+              <div className="w-14 h-14 bg-amber-100 text-amber-600 rounded-2xl flex items-center justify-center text-2xl">
+                🔊
               </div>
+              <h3 className="text-xl font-black text-slate-900">Audio Speech & Gentle Hints</h3>
+              <p className="text-sm text-slate-600 font-medium leading-relaxed">
+                Learners can tap to hear any question or explanation read aloud. If they get stuck, their buddy steps in with friendly step-by-step guidance.
+              </p>
             </div>
           </div>
         </div>
       </section>
 
-      {/* Testimonials */}
-      <section className="py-32 bg-indigo-900 overflow-hidden relative">
-        <div className="absolute top-0 left-0 w-full h-full opacity-10 bg-[radial-gradient(#fff_1.5px,transparent_1.5px)] [background-size:32px_32px]" />
-        <div className="max-w-7xl mx-auto px-6 relative z-10">
-          <div className="text-center mb-20 text-white">
-            <h2 className="text-4xl sm:text-7xl font-black tracking-tight mb-4">Trusted by SA families.</h2>
-            <p className="text-xl text-indigo-200 font-bold">Join thousands of families building math confidence.</p>
-          </div>
-
-          <div className="grid lg:grid-cols-3 gap-8">
-            {testimonials.map((t, i) => (
-              <div key={i} className="p-10 bg-white/10 backdrop-blur-md rounded-[3rem] border border-white/10 flex flex-col hover:bg-white/20 transition-all group">
-                <div className="flex gap-1 mb-6 text-amber-400">
-                  {[1,2,3,4,5].map(s => <Star key={s} className="w-4 h-4 fill-current group-hover:scale-110 transition-transform" />)}
-                </div>
-                <p className="text-lg font-bold text-white mb-8 leading-relaxed italic">"{t.text}"</p>
-                <div className="mt-auto pt-6 border-t border-white/10">
-                  <p className="text-white font-black">{t.name}</p>
-                  <p className="text-indigo-300 text-xs font-bold uppercase tracking-widest leading-relaxed">{t.location} • {t.role}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Pricing Section */}
-      <section id="pricing" className="py-32 px-6">
-        <div className="max-w-5xl mx-auto">
-          <div className="text-center mb-20">
-            <div className="inline-flex items-center gap-2 px-4 py-2 bg-spark-primary text-white rounded-full text-[10px] font-black uppercase tracking-widest mb-6 shadow-lg shadow-spark-primary/20 animate-bounce">
-              Early Access Live 🇿🇦
+      {/* Parent & Teacher Portal Section */}
+      <section id="parents" className="py-20 px-4 sm:px-8 border-t border-slate-100">
+        <div className="max-w-7xl mx-auto bg-gradient-to-tr from-slate-900 to-indigo-950 text-white rounded-[3rem] p-8 sm:p-14 overflow-hidden relative">
+          <div className="max-w-2xl space-y-6 relative z-10">
+            <div className="inline-flex items-center gap-2 px-3 py-1 bg-white/10 rounded-full text-xs font-black uppercase tracking-wider text-emerald-400">
+              <ShieldCheck className="w-4 h-4" />
+              <span>Parent & Teacher Intelligence</span>
             </div>
-            <h2 className="text-4xl sm:text-7xl font-black tracking-tight mb-4 text-fun-gradient">Invest in Their Future.</h2>
-            <p className="text-xl text-gray-500 font-bold">Standard pricing below. <span className="text-spark-primary">Free during early access!</span></p>
-          </div>
 
-          <div className="grid md:grid-cols-2 gap-10 items-stretch">
-            {/* Free Plan */}
-            <div className="p-12 bg-white rounded-[3rem] border border-slate-100 flex flex-col group hover:shadow-premium transition-all">
-              <h3 className="text-2xl font-black mb-2 uppercase tracking-[0.2em] text-slate-400">Mini Spark</h3>
-              <p className="text-slate-400 font-bold mb-10">Perfect for quick daily practice.</p>
-              <div className="mb-12">
-                <span className="text-7xl font-black text-slate-900">R0</span>
-                <span className="text-slate-400 font-black uppercase text-[10px] tracking-[0.3em] ml-3">Forever</span>
+            <h2 className="text-3xl sm:text-5xl font-black tracking-tight leading-tight">
+              See Exactly Where Your Child Shines & Where They Need Support
+            </h2>
+
+            <p className="text-slate-300 font-medium text-base sm:text-lg leading-relaxed">
+              MathSpark includes a dedicated portal for parents and teachers. Monitor CAPS mastery, review questions attempted, track daily 5-minute streaks, and print progress summaries.
+            </p>
+
+            <div className="space-y-3 pt-2">
+              <div className="flex items-center gap-3 text-sm font-bold text-slate-200">
+                <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0" />
+                <span>Zero guesswork: breakdown by addition, times tables, division, and fractions</span>
               </div>
-              <ul className="space-y-5 mb-14 flex-1 text-left">
-                {['Daily Challenges', 'Basic Arithmetic', '1 Buddy Avatar', 'Mobile Friendly'].map(f => (
-                  <li key={f} className="flex items-center gap-4 text-slate-600 font-bold text-sm">
-                    <CheckCircle2 className="w-5 h-5 text-emerald-500 shrink-0" />
-                    {f}
-                  </li>
-                ))}
-              </ul>
-              <button 
-                onClick={onGetStarted}
-                className="w-full py-6 bg-slate-50 text-slate-400 text-lg font-black rounded-2xl hover:bg-slate-100 transition-all border-b-4 border-slate-200"
+              <div className="flex items-center gap-3 text-sm font-bold text-slate-200">
+                <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0" />
+                <span>Private & safe: guest profiles stored locally with optional cloud sync</span>
+              </div>
+              <div className="flex items-center gap-3 text-sm font-bold text-slate-200">
+                <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0" />
+                <span>100% Free: built for South African families and schools</span>
+              </div>
+            </div>
+
+            <div className="pt-4 flex flex-wrap gap-4">
+              <button
+                onClick={onParentPortal || onQuickPlay}
+                className="px-8 py-4 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black rounded-2xl text-base uppercase tracking-wider transition-all flex items-center gap-2 shadow-lg"
               >
-                Sign Up Free
+                <UserCheck className="w-5 h-5" />
+                <span>Open Parent Portal</span>
               </button>
-            </div>
-
-            {/* Pro Plan */}
-            <div className="p-12 bg-white rounded-[3.5rem] border-2 border-spark-primary relative overflow-hidden shadow-premium flex flex-col scale-105 group">
-              <div className="absolute top-0 right-0 p-8">
-                <div className="bg-emerald-500 text-white px-5 py-2 rounded-full text-[10px] font-black uppercase tracking-widest shadow-lg animate-pulse">FREE NOW</div>
-              </div>
-              <h3 className="text-2xl font-black mb-2 text-spark-primary uppercase tracking-[0.2em]">Unlimited Pro</h3>
-              <p className="text-slate-400 font-bold mb-10">Full Grade 4 mastery & insights.</p>
-              <div className="mb-12">
-                <div className="flex items-end gap-3">
-                  <span className="text-7xl font-black text-slate-900 line-through opacity-20">R199</span>
-                  <span className="text-4xl font-black text-emerald-500 mb-2">R0</span>
-                </div>
-                <span className="text-slate-400 font-black uppercase text-[10px] tracking-[0.3em]">Early Access Early Bird</span>
-              </div>
-              <ul className="space-y-5 mb-14 flex-1 text-left">
-                {[
-                  'Full Parent Analytics Portal',
-                  'Weak Areas History Detection',
-                  'AI-Powered Tutor Explanations',
-                  'Exclusive South African Heroes',
-                  'Weekly Progress Email Reports',
-                  'No Subscriptions, Lifetime Access'
-                ].map(f => (
-                  <li key={f} className="flex items-center gap-4 text-slate-900 font-black text-sm">
-                    <Sparkles className="w-5 h-5 text-spark-primary shrink-0 fill-spark-primary/20" />
-                    {f}
-                  </li>
-                ))}
-              </ul>
-              <button 
+              <button
                 onClick={onGetStarted}
-                className="w-full py-7 bg-slate-900 text-white text-xl font-black rounded-3xl shadow-xl hover:bg-slate-800 transition-all hover:translate-y-[-4px] border-b-6 border-slate-700 active:translate-y-0 active:border-b-0"
+                className="px-8 py-4 bg-white/10 hover:bg-white/20 text-white font-black rounded-2xl text-base uppercase tracking-wider transition-all border border-white/20"
               >
-                Get Pro Features (Free)
+                Sign In With Email
               </button>
             </div>
           </div>
 
-        </div>
-      </section>
-
-      {/* FAQ Section */}
-      <section className="py-32 bg-gray-50/50">
-        <div className="max-w-3xl mx-auto px-6">
-          <h2 className="text-4xl font-black text-center mb-16 tracking-tight">Got Questions?</h2>
-          <div className="space-y-4">
-            {faqs.map((faq, i) => (
-              <div key={i} className="bg-white rounded-[2rem] border-2 border-gray-100 overflow-hidden shadow-sm">
-                <button 
-                  onClick={() => setActiveFaq(activeFaq === i ? null : i)}
-                  className="w-full p-8 flex items-center justify-between text-left transition-colors hover:bg-gray-50"
-                >
-                  <span className="text-lg font-black text-gray-900 pr-8">{faq.q}</span>
-                  <ChevronDown className={`w-6 h-6 text-gray-400 transition-transform shrink-0 ${activeFaq === i ? 'rotate-180' : ''}`} />
-                </button>
-                <AnimatePresence>
-                  {activeFaq === i && (
-                    <motion.div
-                      initial={{ height: 0, opacity: 0 }}
-                      animate={{ height: 'auto', opacity: 1 }}
-                      exit={{ height: 0, opacity: 0 }}
-                      className="px-8 pb-8 text-gray-500 font-bold leading-relaxed border-t border-gray-50 pt-4"
-                    >
-                      {faq.a}
-                    </motion.div>
-                  )}
-                </AnimatePresence>
+          {/* Decorative stats card in portal preview */}
+          <div className="hidden lg:block absolute -right-10 top-1/2 -translate-y-1/2 w-[420px] bg-white/10 backdrop-blur-xl p-8 rounded-3xl border border-white/20 shadow-2xl space-y-4">
+            <div className="flex items-center justify-between pb-4 border-b border-white/15">
+              <span className="font-black text-sm uppercase tracking-wider text-amber-300">Grade 4 Learner Report</span>
+              <span className="text-xs bg-emerald-500 text-slate-950 font-black px-2.5 py-1 rounded-full">ACTIVE</span>
+            </div>
+            <div>
+              <p className="text-xs text-slate-300 font-bold uppercase">Multiplication Mastery</p>
+              <div className="w-full bg-white/20 h-3 rounded-full mt-1.5 overflow-hidden">
+                <div className="bg-emerald-400 h-full rounded-full w-[85%]" />
               </div>
-            ))}
+              <p className="text-right text-xs font-black text-emerald-300 mt-1">85% Mastery</p>
+            </div>
+            <div>
+              <p className="text-xs text-slate-300 font-bold uppercase">Fractions Practice</p>
+              <div className="w-full bg-white/20 h-3 rounded-full mt-1.5 overflow-hidden">
+                <div className="bg-amber-400 h-full rounded-full w-[70%]" />
+              </div>
+              <p className="text-right text-xs font-black text-amber-300 mt-1">70% Mastery</p>
+            </div>
+            <div className="p-3 bg-white/10 rounded-2xl text-xs text-slate-200">
+              🦁 Sparky says: "Great progress on the 7× table this week!"
+            </div>
           </div>
         </div>
       </section>
 
-      {/* Final CTA */}
-      <section className="py-40 px-6 text-center overflow-hidden relative">
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-indigo-100 rounded-full blur-[120px] opacity-30 -z-10" />
-        <div className="max-w-4xl mx-auto">
-          <MessageCircle className="w-16 h-16 text-indigo-400 mx-auto mb-8 animate-bounce" />
-          <h2 className="text-6xl sm:text-9xl font-black tracking-tighter mb-8 italic">Ready to Spark?</h2>
-          <p className="text-2xl text-gray-500 font-bold mb-12">Give your child the confidence they deserve in the classroom.</p>
-          <button 
-            onClick={onGetStarted}
-            className="px-16 py-8 bg-indigo-600 text-white text-3xl font-black rounded-[2.5rem] shadow-[0_20px_50px_rgba(79,70,229,0.3)] hover:bg-indigo-700 transition-all hover:scale-105 active:scale-95 border-b-8 border-indigo-900"
-          >
-            Sign Up Now
-          </button>
+      {/* Ready to Spark: Final CTA */}
+      <section className="py-24 text-center px-4 sm:px-8">
+        <div className="max-w-3xl mx-auto space-y-6">
+          <div className="text-6xl animate-bounce">🦁</div>
+          <h2 className="text-4xl sm:text-6xl font-black text-slate-900 tracking-tight">
+            Ready to Spark Your Child's Math Power?
+          </h2>
+          <p className="text-lg sm:text-xl text-slate-600 font-medium">
+            Jump in right now without creating an account, or sign in to save stars and streaks across devices.
+          </p>
+          <div className="pt-4 flex flex-col sm:flex-row items-center justify-center gap-4">
+            <button
+              onClick={() => {
+                SoundService.playTap(2);
+                onQuickPlay();
+              }}
+              className="w-full sm:w-auto px-10 py-5 bg-gradient-to-r from-emerald-500 to-teal-600 text-white rounded-[2rem] font-black text-xl shadow-xl shadow-emerald-500/25 hover:brightness-105 active:scale-95 transition-all flex items-center justify-center gap-3 border-b-6 border-emerald-700"
+            >
+              <Play className="w-6 h-6 fill-white" />
+              <span>Start Learning Now (Free)</span>
+            </button>
+            <button
+              onClick={onGetStarted}
+              className="w-full sm:w-auto px-8 py-5 bg-slate-900 text-white rounded-[2rem] font-black text-xl hover:bg-slate-800 transition-all shadow-md"
+            >
+              Sign In / Register
+            </button>
+          </div>
         </div>
       </section>
 
       {/* Footer */}
-      <footer className="py-24 border-t border-gray-100 bg-white">
-        <div className="max-w-7xl mx-auto px-6 grid md:grid-cols-4 gap-16">
-          <div className="md:col-span-2">
-            <Logo size="md" className="mb-8" />
-            <p className="text-gray-400 font-bold max-w-sm mb-8 leading-relaxed">
-              Empowering South African Grade 4 learners with adaptive, CAPS-aligned math mastery through play. Built by experts, loved by families.
-            </p>
-          </div>
-          <div>
-            <h5 className="font-black uppercase tracking-[0.2em] text-[10px] mb-8 text-indigo-600">Product</h5>
-            <ul className="space-y-4 text-sm font-bold text-gray-400">
-              <li><a href="#how" className="hover:text-indigo-600 transition-colors">How it works</a></li>
-              <li><a href="#pricing" className="hover:text-indigo-600 transition-colors">Pricing Options</a></li>
-              <li><a href="#" className="hover:text-indigo-600 transition-colors">Teacher Portal</a></li>
-            </ul>
-          </div>
-          <div>
-            <h5 className="font-black uppercase tracking-[0.2em] text-[10px] mb-8 text-indigo-600">Support</h5>
-            <ul className="space-y-4 text-sm font-bold text-gray-400">
-              <li><a href="mailto:support@mathspark.co.za" className="hover:text-indigo-600 transition-colors">Contact Support</a></li>
-              <li><a href="#" className="hover:text-indigo-600 transition-colors">Data Privacy</a></li>
-              <li><a href="#" className="hover:text-indigo-600 transition-colors">Terms of Use</a></li>
-            </ul>
-          </div>
-        </div>
-        <div className="max-w-7xl mx-auto px-6 mt-24 pt-12 border-t border-gray-100 flex flex-col md:flex-row justify-between gap-12 items-center">
-          <p className="text-gray-400 font-bold text-sm italic">
-            Made with love in South Africa. 🇿🇦
+      <footer className="py-12 bg-white border-t border-slate-100 px-4 sm:px-8">
+        <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-6">
+          <Logo size="sm" />
+          <p className="text-xs text-slate-500 font-bold text-center">
+            Made with ❤️ for Grade 4 learners across South Africa 🇿🇦 • Aligned with CAPS 2026 Mathematics Curriculum
           </p>
-          <div className="flex gap-8 text-gray-400">
-             <Star className="w-5 h-5" />
-             <Flag className="w-5 h-5" />
-             <Heart className="w-5 h-5" />
+          <div className="flex items-center gap-4 text-xs font-black uppercase tracking-wider text-slate-400">
+            <span>© 2026 MathSpark</span>
           </div>
-          <p className="text-gray-400 font-bold text-sm">
-            © 2026 MathSpark. All rights reserved.
-          </p>
         </div>
       </footer>
+
     </div>
   );
 };

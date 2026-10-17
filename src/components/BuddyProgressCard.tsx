@@ -16,7 +16,8 @@ import {
   ChevronDown,
   AlertTriangle,
   XCircle as XIcon,
-  Share2
+  Share2,
+  Sparkles
 } from 'lucide-react';
 
 interface BuddyProgressCardProps {
@@ -70,21 +71,10 @@ export const BuddyProgressCard: React.FC<BuddyProgressCardProps> = memo(({
         </div>
         
         <div className="shrink-0 flex flex-col items-end gap-2">
-          {profile.isPro ? (
-            <div className="px-4 py-1.5 bg-slate-900 text-white rounded-full text-[10px] font-black uppercase tracking-widest flex items-center gap-2 shadow-lg ring-4 ring-slate-50">
-              <Zap className="w-3 h-3 text-spark-energy fill-spark-energy" />
-              Pro Member
-            </div>
-          ) : (
-            <motion.button
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              onClick={() => onUpgrade?.(buddy.uid, profile.name)}
-              className="px-4 py-1.5 bg-spark-primary text-white rounded-full text-[10px] font-black uppercase tracking-widest flex items-center gap-2 shadow-lg shadow-spark-primary/20 hover:bg-spark-secondary transition-all"
-            >
-              Upgrade Quest
-            </motion.button>
-          )}
+          <div className="px-4 py-1.5 bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-full text-[10px] font-black uppercase tracking-widest flex items-center gap-1.5 shadow-sm">
+            <Sparkles className="w-3.5 h-3.5 text-emerald-600" />
+            Grade 4 Explorer 🇿🇦
+          </div>
         </div>
       </div>
 

@@ -36,7 +36,7 @@ import { ParentPortal } from './components/ParentPortal';
 import { TopicSelector } from './components/TopicSelector';
 import { MultiplicationTable } from './components/MultiplicationTable';
 import { DivisionTable } from './components/DivisionTable';
-import { LandingPage } from './components/LandingPage';
+import { WelcomeScreen } from './components/WelcomeScreen';
 import { Logo } from './components/ui/Logo';
 import { MathLoader } from './components/ui/LoadingStates';
 import { Guide } from './components/Guide';
@@ -72,7 +72,7 @@ export default function App() {
   const [loginRole, setLoginRole] = useState<'buddy' | 'parent' | null>(null);
   const [showLogin, setShowLogin] = useState(false);
   const [currentQuestion, setCurrentQuestion] = useState<Question | null>(null);
-  const [view, setView] = useState<'welcome' | 'practice' | 'dashboard' | 'shop' | 'daily' | 'parent' | 'topics' | 'multiplication-table' | 'division-table' | 'role-selection' | 'summary'>('welcome');
+  const [view, setView] = useState<'welcome' | 'practice' | 'dashboard' | 'shop' | 'daily' | 'parent' | 'topics' | 'multiplication-table' | 'division-table' | 'role-selection' | 'summary'>('role-selection');
   const [nameInput, setNameInput] = useState('');
   const [selectedAvatar, setSelectedAvatar] = useState('🐱');
   const [isFeedbackOpen, setIsFeedbackOpen] = useState(false);
@@ -173,10 +173,41 @@ export default function App() {
           }
         }
       } else {
-        setUserProfile(null);
-        setView('landing'); // Standardizing landing view name
-        // standard landing view name check... wait, I'll stick to 'welcome' if that's what was there
-        setView('welcome');
+        // Unauthenticated: load existing local profile or start instant guest play so MathSpark is immediately open
+        const localGuest = ProgressService.getLocalProfile('guest_learner');
+        if (localGuest && localGuest.buddyData) {
+          setUserProfile(localGuest);
+        } else {
+          const guestUser: UserProfile = {
+            uid: 'guest_learner',
+            email: 'learner@mathspark.local',
+            role: 'buddy',
+            buddyData: {
+              name: 'Grade 4 Champ',
+              avatar: '🦁',
+              stars: 10,
+              streak: 0,
+              bestStreak: 0,
+              difficulty: Difficulty.EASY,
+              totalQuestions: 0,
+              correctAnswers: 0,
+              topicPerformance: {},
+              badges: ['Math Explorer'],
+              weakAreas: {} as any,
+              unlockedAvatars: ['🦁', '🐘', '🦏', '🐆', '🐃', '🦓'],
+              dailyChallengeStreak: 0,
+              dailyLearningStreak: 1,
+              dailyGoal: 5,
+              questionsToday: 0,
+              enabledOperations: Object.values(Operation),
+              currentTerm: Term.TERM_1,
+              isPro: false,
+            }
+          };
+          localStorage.setItem('user_profile_guest_learner', JSON.stringify(guestUser));
+          setUserProfile(guestUser);
+        }
+        setView('role-selection');
       }
       setIsAuthReady(true);
       setIsAppLoading(false);
@@ -637,170 +668,156 @@ export default function App() {
   }
 
   if (!user && !userProfile) {
-    if (!showLogin && !loginRole) {
-      return (
-        <div className="min-h-screen bg-white flex flex-col">
-          <div className="bg-slate-900 text-white py-2 text-center relative z-50">
-            <p className="text-[10px] font-black uppercase tracking-[0.3em] flex items-center justify-center gap-3">
-              <span className="w-1.5 h-1.5 bg-spark-accent rounded-full animate-pulse" />
-              100% CAPS 2026 Aligned Grade 4 Mathematics 🇿🇦
-              <span className="w-1.5 h-1.5 bg-spark-accent rounded-full animate-pulse" />
-            </p>
-          </div>
-          <LandingPage 
-            onGetStarted={() => setShowLogin(true)} 
-            onQuickPlay={handleStartGuestPlay}
-          />
-        </div>
-      );
-    }
-
     if (!loginRole) {
       return (
-        <div className="min-h-screen flex items-center justify-center p-4 sm:p-6 bg-indigo-50">
-          <motion.div 
-            initial={{ scale: 0.9, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            className="bg-white p-6 sm:p-10 rounded-[2.5rem] sm:rounded-[4rem] shadow-2xl border-4 sm:border-8 border-indigo-100 w-full max-w-md text-center relative overflow-hidden"
-          >
-            <div className="absolute top-0 left-0 w-full h-2 sm:h-3 bg-gradient-to-r from-spark-primary via-spark-secondary to-spark-accent" />
-            
-            <button 
-              onClick={() => setShowLogin(false)}
-              className="absolute top-6 left-6 p-2 text-gray-400 hover:text-indigo-600 transition-colors"
-              title="Back to Home"
-            >
-              <ChevronLeft className="w-6 h-6" />
-            </button>
-
-            <Logo size="lg" className="justify-center mb-6" showText={false} />
-            <h1 className="text-3xl sm:text-5xl font-black text-gray-900 mb-1 tracking-tighter leading-none">MathSpark</h1>
-            <p className="text-gray-400 font-bold mb-8 uppercase tracking-widest text-[9px] sm:text-xs">Grade 4 Math Adventures 🇿🇦</p>
-            
-            <div className="grid gap-3 sm:gap-4">
-              {/* Instant Student Play Button (No Email Needed) */}
-              <motion.button
-                whileHover={{ scale: 1.02, translateY: -2 }}
-                whileTap={{ scale: 0.98, translateY: 0 }}
-                onClick={handleStartGuestPlay}
-                className="group relative overflow-hidden p-6 bg-gradient-to-r from-emerald-500 to-teal-600 text-white rounded-[2rem] shadow-lg transition-all flex items-center justify-between border-b-6 border-emerald-700 min-h-[64px]"
-              >
-                <div className="text-left relative z-10">
-                  <p className="font-black text-2xl tracking-tight leading-none">Instant Play 🚀</p>
-                  <p className="text-emerald-100 text-[11px] font-bold uppercase tracking-wider mt-1">Start Questing (No Email)</p>
-                </div>
-                <div className="p-3 bg-white/20 rounded-2xl group-hover:bg-white/30 transition-colors">
-                  <Play className="w-8 h-8 text-white fill-white" />
-                </div>
-              </motion.button>
-
-              <motion.button
-                whileHover={{ scale: 1.02, translateY: -2 }}
-                whileTap={{ scale: 0.98, translateY: 0 }}
-                onClick={() => setLoginRole('buddy')}
-                className="group relative overflow-hidden p-5 bg-spark-primary text-white rounded-[2rem] shadow-md transition-all flex items-center justify-between border-b-6 border-indigo-800 min-h-[56px]"
-              >
-                <div className="text-left relative z-10">
-                  <p className="font-black text-xl tracking-tight leading-none">I have an Account</p>
-                  <p className="text-indigo-200 text-[10px] font-bold uppercase tracking-wider mt-1 opacity-90">Sign in with Email</p>
-                </div>
-                <div className="p-2.5 bg-white/10 rounded-2xl group-hover:bg-white/20 transition-colors">
-                  <Users className="w-6 h-6 text-white" />
-                </div>
-              </motion.button>
-
-              <motion.button
-                whileHover={{ scale: 1.02, translateY: -2 }}
-                whileTap={{ scale: 0.98, translateY: 0 }}
-                onClick={() => setLoginRole('parent')}
-                className="group relative overflow-hidden p-5 bg-white border-2 border-slate-200 text-slate-800 rounded-[2rem] shadow-sm transition-all flex items-center justify-between border-b-6 border-slate-300 min-h-[56px]"
-              >
-                <div className="text-left relative z-10">
-                  <p className="font-black text-xl tracking-tight leading-none text-slate-900">Parent Portal</p>
-                  <p className="text-slate-400 text-[10px] font-bold uppercase tracking-wider mt-1">Track Progress</p>
-                </div>
-                <div className="p-2.5 bg-slate-50 rounded-2xl group-hover:bg-slate-100 transition-colors">
-                  <UserCheck className="w-6 h-6 text-slate-600" />
-                </div>
-              </motion.button>
-            </div>
-          </motion.div>
-        </div>
+        <WelcomeScreen
+          onSelectBuddy={() => {
+            setLoginRole('buddy');
+            setIsSignUp(false);
+            setAuthError('');
+          }}
+          onSelectParent={() => {
+            setLoginRole('parent');
+            setIsSignUp(false);
+            setAuthError('');
+          }}
+        />
       );
     }
 
     const isBuddyLogin = loginRole === 'buddy';
 
     return (
-      <div className={`min-h-screen flex items-center justify-center p-4 sm:p-6 bg-indigo-50`}>
+      <div className={`min-h-screen flex items-center justify-center p-4 sm:p-6 bg-[#F8F9FE]`}>
         <motion.div 
           initial={{ y: 20, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
-          className="bg-white p-6 sm:p-12 rounded-[2.5rem] sm:rounded-[4rem] shadow-2xl border-4 sm:border-8 border-indigo-100 w-full max-w-md relative overflow-hidden"
+          className="bg-white p-6 sm:p-10 rounded-[2.5rem] sm:rounded-[3.5rem] shadow-2xl border-4 sm:border-8 border-indigo-100 w-full max-w-md relative overflow-hidden"
         >
-          <div className="absolute top-0 left-0 w-full h-2 sm:h-3 bg-gradient-to-r from-spark-primary via-spark-secondary to-spark-accent" />
+          <div className="absolute top-0 left-0 w-full h-2.5 bg-gradient-to-r from-spark-primary via-spark-secondary to-spark-accent" />
           
+          {/* Back button to Welcome Screen */}
           <button 
+            type="button"
             onClick={() => {
               setLoginRole(null);
               setIsSignUp(false);
-              setAuthError(null);
+              setAuthError('');
+              setView('role-selection');
             }}
-            className="absolute top-6 sm:top-8 left-6 sm:left-8 p-2 text-gray-300 hover:text-spark-primary transition-colors"
+            className="absolute top-6 sm:top-8 left-6 sm:left-8 p-2 text-slate-400 hover:text-indigo-600 transition-colors rounded-xl hover:bg-slate-50"
+            title="Back to Who's Learning Today?"
           >
-            <ChevronLeft className="w-6 h-6" />
+            <ChevronLeft className="w-6 h-6 stroke-[2.5]" />
           </button>
 
-          <div className="text-center mb-6 sm:mb-10">
-            <Logo size="md" className="justify-center mb-6" showText={false} />
-            <h2 className="text-2xl sm:text-4xl font-black text-gray-900 tracking-tight mb-2">
-              {isSignUp ? (isBuddyLogin ? 'New Quest' : 'Join Us') : 'Welcome Back'}
+          {/* Role Header */}
+          <div className="text-center pt-2 mb-6">
+            <div className="w-16 h-16 mx-auto mb-3 rounded-2xl flex items-center justify-center shadow-inner relative">
+              {isBuddyLogin ? (
+                <div className="w-16 h-16 rounded-2xl bg-gradient-to-tr from-[#2563EB] to-[#7C3AED] flex items-center justify-center text-white text-2xl shadow-lg shadow-indigo-500/25">
+                  🚀
+                </div>
+              ) : (
+                <div className="w-16 h-16 rounded-2xl bg-indigo-50 border border-indigo-100 flex items-center justify-center text-2xl shadow-sm">
+                  🔒
+                </div>
+              )}
+            </div>
+
+            <h2 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight leading-tight">
+              {isBuddyLogin ? 'Buddy Account' : 'Parent Portal'}
             </h2>
-            <p className="text-spark-primary font-black uppercase text-[10px] tracking-[0.2em]">
-              {isBuddyLogin ? 'Buddy Access' : 'Parent Portal'}
+            <p className="text-[#6D28D9] font-black uppercase text-[10px] sm:text-[11px] tracking-widest mt-1">
+              {isBuddyLogin ? 'Learner Access 🇿🇦 Grade 4' : 'Progress & Curriculum Management'}
             </p>
           </div>
 
-          <form onSubmit={handleEmailAuth} className="space-y-4 sm:space-y-6">
+          {/* Segmented Control: Log In vs Create Account */}
+          <div className="flex bg-slate-100 p-1.5 rounded-2xl mb-6 border border-slate-200/60">
+            <button
+              type="button"
+              onClick={() => {
+                setIsSignUp(false);
+                setAuthError('');
+              }}
+              className={`flex-1 py-2.5 rounded-xl font-black text-xs sm:text-sm uppercase tracking-wider transition-all ${
+                !isSignUp 
+                  ? 'bg-white text-indigo-700 shadow-sm' 
+                  : 'text-slate-500 hover:text-slate-800'
+              }`}
+            >
+              Log In
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setIsSignUp(true);
+                setAuthError('');
+              }}
+              className={`flex-1 py-2.5 rounded-xl font-black text-xs sm:text-sm uppercase tracking-wider transition-all ${
+                isSignUp 
+                  ? 'bg-white text-indigo-700 shadow-sm' 
+                  : 'text-slate-500 hover:text-slate-800'
+              }`}
+            >
+              Create Account
+            </button>
+          </div>
+
+          <form onSubmit={handleEmailAuth} className="space-y-4">
             {isSignUp && (
-              <div className="space-y-2">
+              <div className="space-y-1">
+                <label className="text-[10px] font-black uppercase tracking-wider text-slate-500 px-1">
+                  {isBuddyLogin ? 'Learner / Buddy Name' : 'Parent Name'}
+                </label>
                 <input
                   type="text"
                   value={nameInput}
                   onChange={(e) => setNameInput(e.target.value)}
                   required
-                  className="w-full p-4 sm:p-6 bg-gray-50 border-2 sm:border-4 border-gray-100 rounded-2xl sm:rounded-3xl font-black text-gray-700 placeholder:text-gray-300 focus:outline-none focus:border-spark-primary/30 transition-all shadow-inner min-h-[56px]"
-                  placeholder="YOUR NAME"
+                  className="w-full p-4 bg-slate-50 border-2 border-slate-200 rounded-2xl font-bold text-slate-800 placeholder:text-slate-400 focus:outline-none focus:border-indigo-500 transition-all shadow-inner text-sm"
+                  placeholder={isBuddyLogin ? 'e.g. Sipho, Chloe, Liam' : 'e.g. Sarah van der Merwe'}
                 />
               </div>
             )}
-            <div className="space-y-3 sm:space-y-4">
+            
+            <div className="space-y-1">
+              <label className="text-[10px] font-black uppercase tracking-wider text-slate-500 px-1">
+                Email Address
+              </label>
               <input
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
-                className="w-full p-4 sm:p-6 bg-gray-50 border-2 sm:border-4 border-gray-100 rounded-2xl sm:rounded-3xl font-black text-gray-700 placeholder:text-gray-300 focus:outline-none focus:border-spark-primary/30 transition-all shadow-inner min-h-[56px]"
-                placeholder="EMAIL ADDRESS"
+                className="w-full p-4 bg-slate-50 border-2 border-slate-200 rounded-2xl font-bold text-slate-800 placeholder:text-slate-400 focus:outline-none focus:border-indigo-500 transition-all shadow-inner text-sm"
+                placeholder="name@example.com"
               />
+            </div>
+
+            <div className="space-y-1">
+              <label className="text-[10px] font-black uppercase tracking-wider text-slate-500 px-1">
+                Password
+              </label>
               <input
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required={!resetSent}
-                className="w-full p-4 sm:p-6 bg-gray-50 border-2 sm:border-4 border-gray-100 rounded-2xl sm:rounded-3xl font-black text-gray-700 placeholder:text-gray-300 focus:outline-none focus:border-spark-primary/30 transition-all shadow-inner min-h-[56px]"
-                placeholder="PASSWORD"
+                className="w-full p-4 bg-slate-50 border-2 border-slate-200 rounded-2xl font-bold text-slate-800 placeholder:text-slate-400 focus:outline-none focus:border-indigo-500 transition-all shadow-inner text-sm"
+                placeholder="At least 6 characters"
               />
             </div>
 
             {resetSent && (
-              <p className="p-4 bg-emerald-50 text-emerald-600 text-xs font-black uppercase tracking-tighter rounded-2xl border-2 border-emerald-100 text-center">
-                Reset link sent!
+              <p className="p-3 bg-emerald-50 text-emerald-700 text-xs font-black uppercase tracking-wider rounded-xl border border-emerald-200 text-center">
+                Password reset link sent to your email!
               </p>
             )}
 
             {authError && (
-              <p className="p-4 bg-rose-50 text-rose-500 text-xs font-black uppercase tracking-tighter rounded-2xl border-2 border-rose-100 text-center">
+              <p className="p-3 bg-rose-50 text-rose-600 text-xs font-black rounded-xl border border-rose-200 text-center">
                 {authError}
               </p>
             )}
@@ -808,30 +825,50 @@ export default function App() {
             <button
               type="submit"
               disabled={isLoggingIn}
-              className="w-full py-6 bg-spark-primary text-white text-2xl font-black rounded-[2rem] shadow-xl shadow-spark-primary/20 hover:bg-spark-secondary transition-all active:scale-95 disabled:opacity-50 border-b-6 border-spark-primary/80"
+              className="w-full py-4 bg-gradient-to-r from-[#2563EB] to-[#7C3AED] text-white text-lg font-black rounded-2xl shadow-lg shadow-indigo-500/25 hover:opacity-95 transition-all active:scale-[0.98] disabled:opacity-50 mt-2"
             >
-              {isLoggingIn ? '...' : (isSignUp ? 'Create Spark ✨' : 'Let\'s Go! 🚀')}
+              {isLoggingIn 
+                ? 'Processing...' 
+                : (isSignUp 
+                    ? (isBuddyLogin ? 'Create Buddy Account ✨' : 'Create Parent Account ✨') 
+                    : (isBuddyLogin ? 'Log In to MathSpark 🚀' : 'Log In to Parent Portal 🔒')
+                  )}
             </button>
 
-            <div className="flex flex-col gap-4 text-center pt-2">
+            {/* Quick Guest Play for Buddy */}
+            {isBuddyLogin && (
+              <div className="pt-2">
+                <button
+                  type="button"
+                  onClick={handleStartGuestPlay}
+                  className="w-full py-3 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 font-black text-xs sm:text-sm rounded-2xl border-2 border-emerald-200 transition-all flex items-center justify-center gap-2"
+                >
+                  <span>🚀</span> Play as Guest (No Email Needed)
+                </button>
+              </div>
+            )}
+
+            {/* Forgot password & Switch Role Links */}
+            <div className="flex flex-col gap-2.5 text-center pt-3 border-t border-slate-100">
               {!isSignUp && (
                 <button
                   type="button"
                   onClick={handleResetPassword}
-                  className="text-indigo-400 font-bold hover:text-indigo-600 transition-colors text-xs"
+                  className="text-indigo-600 font-bold hover:text-indigo-800 transition-colors text-xs"
                 >
-                  Forgot your secret code?
+                  Forgot your password?
                 </button>
               )}
+              
               <button
                 type="button"
                 onClick={() => {
-                  setIsSignUp(!isSignUp);
+                  setLoginRole(isBuddyLogin ? 'parent' : 'buddy');
                   setAuthError('');
                 }}
-                className="text-indigo-600 font-black uppercase tracking-widest text-[10px] hover:underline"
+                className="text-slate-400 hover:text-indigo-600 font-bold text-xs transition-colors"
               >
-                {isSignUp ? 'Already have an account? Sign In' : 'New here? Create an account'}
+                {isBuddyLogin ? 'Switch to Parent Account →' : 'Switch to Learner / Buddy Account →'}
               </button>
             </div>
           </form>
@@ -842,31 +879,18 @@ export default function App() {
 
   if (view === 'role-selection') {
     return (
-      <div className="min-h-screen flex items-center justify-center p-6 bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500">
-        <motion.div 
-          initial={{ scale: 0.9, opacity: 0 }}
-          animate={{ scale: 1, opacity: 1 }}
-          className="bg-white/90 backdrop-blur-lg p-10 rounded-[3rem] shadow-2xl border-8 border-white/20 w-full max-w-md text-center"
-        >
-          <h2 className="text-3xl font-black text-indigo-700 mb-8">Who are you?</h2>
-          <div className="grid gap-4">
-            <button
-              onClick={() => handleRoleSelection('buddy')}
-              className="p-8 bg-gradient-to-br from-indigo-500 to-purple-600 text-white rounded-3xl shadow-xl hover:scale-105 transition-all flex flex-col items-center gap-3"
-            >
-              <Users className="w-12 h-12" />
-              <span className="text-2xl font-black">I'm a Buddy</span>
-            </button>
-            <button
-              onClick={() => handleRoleSelection('parent')}
-              className="p-8 bg-gradient-to-br from-emerald-500 to-teal-600 text-white rounded-3xl shadow-xl hover:scale-105 transition-all flex flex-col items-center gap-3"
-            >
-              <UserCheck className="w-12 h-12" />
-              <span className="text-2xl font-black">I'm a Parent</span>
-            </button>
-          </div>
-        </motion.div>
-      </div>
+      <WelcomeScreen
+        onSelectBuddy={() => {
+          setLoginRole('buddy');
+          setIsSignUp(false);
+          setAuthError('');
+        }}
+        onSelectParent={() => {
+          setLoginRole('parent');
+          setIsSignUp(false);
+          setAuthError('');
+        }}
+      />
     );
   }
 
@@ -914,16 +938,23 @@ export default function App() {
     );
   }
 
-  if (userProfile?.role === 'parent') {
+  if (userProfile?.role === 'parent' || view === 'parent') {
+    const parentProfile: UserProfile = userProfile?.role === 'parent' ? userProfile : {
+      uid: userProfile?.uid || 'guest_parent',
+      email: userProfile?.email || 'parent@mathspark.local',
+      role: 'parent',
+      buddyUids: [userProfile?.uid || 'guest_learner'],
+    };
+
     return (
-      <div className="min-h-screen bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 p-6">
+      <div className="min-h-screen bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 p-4 sm:p-6">
         <div className="max-w-4xl mx-auto">
           <ParentPortal 
-            userProfile={userProfile}
+            userProfile={parentProfile}
             onLogout={logout}
             onFeedback={() => setIsFeedbackOpen(true)}
             onShare={handleShare}
-            onClose={() => setView('welcome')}
+            onClose={() => setView('role-selection')}
           />
         </div>
       </div>
@@ -979,12 +1010,28 @@ export default function App() {
           <button 
             onClick={() => setView('shop')}
             className="p-2.5 sm:p-3 bg-amber-100 text-amber-600 rounded-xl hover:bg-amber-200 transition-colors shadow-sm min-h-[44px] min-w-[44px] flex items-center justify-center"
+            title="Safari Avatar Shop"
           >
             <ShoppingBag className="w-5 h-5 sm:w-6 sm:h-6" />
           </button>
           <button 
+            onClick={() => setView('role-selection')}
+            title="Who's Learning Today? (Switch Role)"
+            className="p-2.5 sm:p-3 bg-indigo-50 text-indigo-600 rounded-xl hover:bg-indigo-100 transition-colors shadow-sm min-h-[44px] min-w-[44px] flex items-center justify-center"
+          >
+            <Users className="w-5 h-5 sm:w-6 sm:h-6" />
+          </button>
+          <button 
+            onClick={() => setView('parent')}
+            title="Parent & Teacher Portal"
+            className="p-2.5 sm:p-3 bg-slate-100 text-slate-700 rounded-xl hover:bg-slate-200 transition-colors shadow-sm min-h-[44px] min-w-[44px] flex items-center justify-center"
+          >
+            <UserCheck className="w-5 h-5 sm:w-6 sm:h-6" />
+          </button>
+          <button 
             onClick={logout}
             className="p-2.5 sm:p-3 bg-rose-100 text-rose-500 rounded-xl hover:bg-rose-200 transition-colors shadow-sm min-h-[44px] min-w-[44px] flex items-center justify-center"
+            title="Switch Learner or Sign In"
           >
             <LogOut className="w-5 h-5 sm:w-6 sm:h-6" />
           </button>
@@ -1089,6 +1136,44 @@ export default function App() {
                       </div>
                     </motion.div>
                   )}
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <motion.div
+                    whileHover={{ scale: 1.02, translateY: -2 }}
+                    whileTap={{ scale: 0.98 }}
+                    onClick={() => {
+                      speechService.speak('Multiplication Table');
+                      setView('multiplication-table');
+                    }}
+                    className="bg-purple-50 p-5 rounded-[2.5rem] border-2 border-purple-200/60 shadow-sm flex items-center gap-3 cursor-pointer group"
+                  >
+                    <div className="w-12 h-12 bg-purple-500 text-white rounded-2xl flex items-center justify-center shadow-md font-black text-xl shrink-0">
+                      ✖️
+                    </div>
+                    <div className="text-left">
+                      <p className="font-black text-xs text-purple-900 uppercase tracking-wider">Times Tables</p>
+                      <p className="text-[10px] text-purple-600 font-bold">1× to 12×</p>
+                    </div>
+                  </motion.div>
+
+                  <motion.div
+                    whileHover={{ scale: 1.02, translateY: -2 }}
+                    whileTap={{ scale: 0.98 }}
+                    onClick={() => {
+                      speechService.speak('Division Table');
+                      setView('division-table');
+                    }}
+                    className="bg-emerald-50 p-5 rounded-[2.5rem] border-2 border-emerald-200/60 shadow-sm flex items-center gap-3 cursor-pointer group"
+                  >
+                    <div className="w-12 h-12 bg-emerald-500 text-white rounded-2xl flex items-center justify-center shadow-md font-black text-xl shrink-0">
+                      ➗
+                    </div>
+                    <div className="text-left">
+                      <p className="font-black text-xs text-emerald-900 uppercase tracking-wider">Division Tables</p>
+                      <p className="text-[10px] text-emerald-600 font-bold">÷1 to ÷12</p>
+                    </div>
+                  </motion.div>
                 </div>
 
                 <div className="grid grid-cols-2 gap-6 pb-4">
