@@ -1,0 +1,99 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "A user of the application, either a buddy or a parent.",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string", "description": "The unique ID of the user." },
+        "email": { "type": "string", "description": "The email of the user." },
+        "role": { "type": "string", "enum": ["buddy", "parent", "student"], "description": "The role of the user." },
+        "parentEmail": { "type": "string", "description": "For buddies, the email of their linked parent." },
+        "buddyUids": { "type": "array", "items": { "type": "string" }, "description": "For parents, UIDs of linked buddies." },
+        "childrenUids": { "type": "array", "items": { "type": "string" }, "description": "Legacy field for buddy UIDs." },
+        "buddyData": {
+          "type": "object",
+          "properties": {
+            "name": { "type": "string" },
+            "avatar": { "type": "string" },
+            "stars": { "type": "integer" },
+            "streak": { "type": "integer" },
+            "bestStreak": { "type": "integer" },
+            "difficulty": { "type": "string" },
+            "totalQuestions": { "type": "integer" },
+            "correctAnswers": { "type": "integer" },
+            "topicPerformance": { "type": "object" },
+            "badges": { "type": "array", "items": { "type": "string" } },
+            "weakAreas": { "type": "object" },
+            "unlockedAvatars": { "type": "array", "items": { "type": "string" } },
+            "lastPlayedDate": { "type": "string" },
+            "lastDailyChallengeDate": { "type": "string" },
+            "dailyChallengeStreak": { "type": "integer" },
+            "dailyLearningStreak": { "type": "integer" },
+            "dailyGoal": { "type": "integer" },
+            "questionsToday": { "type": "integer" },
+            "enabledOperations": { "type": "array", "items": { "type": "string" } },
+            "currentTerm": { "type": "string" },
+            "isPro": { "type": "boolean" },
+            "parentPassword": { "type": "string" }
+          }
+        },
+        "dailyStats": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "date": { "type": "string" },
+              "correct": { "type": "integer" },
+              "total": { "type": "integer" },
+              "starsEarned": { "type": "integer" }
+            }
+          }
+        }
+      },
+      "required": ["uid", "email", "role"]
+    },
+    "StruggledQuestion": {
+      "title": "StruggledQuestion",
+      "description": "A question that a buddy struggled with.",
+      "type": "object",
+      "properties": {
+        "buddyUid": { "type": "string" },
+        "questionText": { "type": "string" },
+        "userAnswer": { "type": "string" },
+        "correctAnswer": { "type": "string" },
+        "operation": { "type": "string" },
+        "timestamp": { "type": "string" },
+        "explanation": { "type": "array", "items": { "type": "string" } }
+      },
+      "required": ["buddyUid", "questionText", "userAnswer", "correctAnswer", "operation", "timestamp"]
+    },
+    "Feedback": {
+      "title": "Feedback",
+      "description": "User feedback and ratings.",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "rating": { "type": "integer", "description": "1-5 star rating" },
+        "comment": { "type": "string" },
+        "timestamp": { "type": "string" },
+        "email": { "type": "string" }
+      },
+      "required": ["uid", "rating", "timestamp"]
+    }
+  },
+  "firestore": {
+    "/users/{uid}": {
+      "schema": "User",
+      "description": "User profiles and data."
+    },
+    "/struggled_questions/{id}": {
+      "schema": "StruggledQuestion",
+      "description": "History of questions buddies struggled with."
+    },
+    "/feedback/{id}": {
+      "schema": "Feedback",
+      "description": "User feedback collection."
+    }
+  }
+}

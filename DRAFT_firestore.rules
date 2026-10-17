@@ -1,0 +1,79 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Default deny
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // ===============================================================
+    // Global Helpers
+    // ===============================================================
+    function isSignedIn() { return request.auth != null; }
+    function isOwner(uid) { return isSignedIn() && request.auth.uid == uid; }
+    function isAdmin() { 
+      return isSignedIn() && (
+        request.auth.token.email == "smangelent@gmail.com" && request.auth.token.email_verified == true
+      ); 
+    }
+    function isValidId(id) { return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$'); }
+    function incoming() { return request.resource.data; }
+    function existing() { return resource.data; }
+
+    // ===============================================================
+    // Validation Helpers
+    // ===============================================================
+    
+    function isValidUser(data) {
+      return data.keys().hasAll(['uid', 'email', 'role']) &&
+             data.uid is string && data.uid.size() <= 128 &&
+             data.email is string && data.email.size() <= 256 &&
+             data.role is string && data.role in ['buddy', 'parent', 'student'];
+    }
+
+    function isValidStruggledQuestion(data) {
+      return data.keys().hasAll(['buddyUid', 'questionText', 'userAnswer', 'correctAnswer', 'operation', 'timestamp']) &&
+             data.buddyUid is string && data.buddyUid.size() <= 128 &&
+             data.questionText is string && data.questionText.size() <= 500 &&
+             data.userAnswer is string && data.userAnswer.size() <= 500 &&
+             data.correctAnswer is string && data.correctAnswer.size() <= 500 &&
+             data.operation is string && data.operation.size() <= 50 &&
+             data.timestamp is string;
+    }
+
+    // ===============================================================
+    // Collection Rules
+    // ===============================================================
+
+    match /users/{uid} {
+      allow get: if isOwner(uid) || isAdmin() || (
+        isSignedIn() && (
+          // Parents can get their buddies
+          ('buddyUids' in get(/databases/$(database)/documents/users/$(request.auth.uid)).data &&
+           get(/databases/$(database)/documents/users/$(request.auth.uid)).data.buddyUids.hasAny([uid])) ||
+          // Buddy can get parent (if needed)
+          (resource.data.role == 'parent')
+        )
+      );
+
+      allow list: if isSignedIn(); // Restricted by application logic, but rules should harden this if possible
+
+      allow create: if isOwner(uid) && isValidUser(incoming());
+      
+      allow update: if (isOwner(uid) || isAdmin()) && isValidUser(incoming());
+    }
+
+    match /struggled_questions/{id} {
+      allow read: if isSignedIn() && (
+        isOwner(resource.data.buddyUid) || 
+        isAdmin()
+      );
+      allow create: if isSignedIn() && isOwner(incoming().buddyUid) && isValidStruggledQuestion(incoming());
+    }
+
+    match /feedback/{id} {
+      allow create: if isSignedIn();
+      allow read: if isAdmin();
+    }
+  }
+}
