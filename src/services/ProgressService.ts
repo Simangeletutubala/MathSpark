@@ -132,16 +132,21 @@ export class ProgressService {
       newUser.buddyUids = buddies.map(c => c.uid);
     }
 
+    // Always cache locally first so user experience is instant and never blocked
+    localStorage.setItem(`user_profile_${uid}`, JSON.stringify(newUser));
+    this.profileCache[uid] = { data: newUser, timestamp: Date.now() };
+
     try {
       await setDoc(doc(db, 'users', uid), newUser);
-      // Update caches
-      localStorage.setItem(`user_profile_${uid}`, JSON.stringify(newUser));
-      this.profileCache[uid] = { data: newUser, timestamp: Date.now() };
-      return newUser;
     } catch (error) {
-      handleFirestoreError(error, OperationType.WRITE, path);
-      throw error;
+      console.warn("Could not write user profile to Firestore, saved locally:", error);
+      try {
+        handleFirestoreError(error, OperationType.WRITE, path);
+      } catch {
+        // Fallback silently
+      }
     }
+    return newUser;
   }
 
   static async findBuddiesByParentEmail(email: string): Promise<UserProfile[]> {
@@ -151,13 +156,26 @@ export class ProgressService {
       const querySnapshot = await getDocs(q);
       return querySnapshot.docs.map(doc => doc.data() as UserProfile);
     } catch (error) {
-      handleFirestoreError(error, OperationType.LIST, path);
+      try {
+        handleFirestoreError(error, OperationType.LIST, path);
+      } catch {
+        // Fallback silently
+      }
       return [];
     }
   }
 
   static async updateBuddyProfile(uid: string, updates: Partial<BuddyProfile>): Promise<void> {
     const path = `users/${uid}`;
+    
+    // Always update local cache first
+    const current = this.getLocalProfile(uid);
+    if (current && current.buddyData) {
+      current.buddyData = { ...current.buddyData, ...updates };
+      localStorage.setItem(`user_profile_${uid}`, JSON.stringify(current));
+      this.profileCache[uid] = { data: current, timestamp: Date.now() };
+    }
+
     try {
       const userDoc = await getDoc(doc(db, 'users', uid));
       if (userDoc.exists()) {
@@ -168,7 +186,11 @@ export class ProgressService {
         }
       }
     } catch (error) {
-      handleFirestoreError(error, OperationType.UPDATE, path);
+      try {
+        handleFirestoreError(error, OperationType.UPDATE, path);
+      } catch {
+        // Fallback silently
+      }
     }
   }
 
@@ -237,7 +259,7 @@ export class ProgressService {
     return profile.lastDailyChallengeDate !== today;
   }
 
-  private static getDefaultWeakAreas(): Record<Operation, number> {
+  public static getDefaultWeakAreas(): Record<Operation, number> {
     const weakAreas: any = {};
     Object.values(Operation).forEach(op => {
       weakAreas[op] = 0;

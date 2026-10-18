@@ -68,7 +68,33 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ userProfile, onClose
 
   const loadBuddies = async () => {
     setIsLoadingBuddies(true);
-    const linkedBuddies = await ProgressService.findBuddiesByParentEmail(userProfile.email);
+    let linkedBuddies: UserProfile[] = [];
+    try {
+      linkedBuddies = await ProgressService.findBuddiesByParentEmail(userProfile.email);
+    } catch (err) {
+      console.warn('Could not query buddies by parent email:', err);
+    }
+
+    // Check linked buddy UIDs
+    if (userProfile.buddyUids && userProfile.buddyUids.length > 0) {
+      for (const uid of userProfile.buddyUids) {
+        if (!linkedBuddies.some(b => b.uid === uid)) {
+          const profile = await ProgressService.getUserProfile(uid) || ProgressService.getLocalProfile(uid);
+          if (profile && profile.buddyData) {
+            linkedBuddies.push(profile);
+          }
+        }
+      }
+    }
+
+    // Fallback: If no student is linked yet, include guest or demo learner so parent can preview analytics
+    if (linkedBuddies.length === 0) {
+      const guest = ProgressService.getLocalProfile('guest_learner') || ProgressService.getLocalProfile('user_buddy_learner_mathspark_co_za');
+      if (guest && guest.buddyData) {
+        linkedBuddies.push(guest);
+      }
+    }
+
     setBuddies(linkedBuddies);
     setIsLoadingBuddies(false);
   };
@@ -170,26 +196,26 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ userProfile, onClose
     <motion.div 
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      className="bg-white rounded-[2.5rem] sm:rounded-[3.5rem] shadow-premium border border-slate-100 overflow-hidden"
+      className="bg-white rounded-3xl sm:rounded-[3.5rem] shadow-premium border border-slate-100 overflow-hidden"
     >
-      <div className="bg-slate-900 px-6 py-6 sm:px-10 sm:py-8 text-white flex justify-between items-center relative overflow-hidden">
-        <div className="absolute top-0 right-0 w-64 h-64 bg-spark-primary/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
+      <div className="bg-slate-900 px-4 py-4 sm:px-10 sm:py-8 text-white flex justify-between items-center relative overflow-hidden gap-2">
+        <div className="absolute top-0 right-0 w-64 h-64 bg-spark-primary/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2 pointer-events-none" />
         
-        <div className="flex items-center gap-4 relative z-10">
-          <div className="p-3 bg-white/10 rounded-2xl backdrop-blur-md border border-white/10">
+        <div className="flex items-center gap-2.5 sm:gap-4 relative z-10 min-w-0">
+          <div className="p-2 sm:p-3 bg-white/10 rounded-xl sm:rounded-2xl backdrop-blur-md border border-white/10 shrink-0">
             <Logo size="sm" showText={false} />
           </div>
-          <div>
-            <h2 className="text-xl sm:text-2xl font-black tracking-tight leading-none">Parent HQ</h2>
-            <p className="text-[10px] uppercase font-black tracking-[0.2em] text-slate-400 mt-1">Management Portal 🇿🇦</p>
+          <div className="min-w-0">
+            <h2 className="text-lg sm:text-2xl font-black tracking-tight leading-none truncate">Parent HQ</h2>
+            <p className="text-[9px] sm:text-[10px] uppercase font-black tracking-[0.2em] text-slate-400 mt-1 truncate">Management Portal 🇿🇦</p>
           </div>
         </div>
         
-        <div className="flex items-center gap-3 relative z-10">
+        <div className="flex items-center gap-1.5 sm:gap-3 relative z-10 shrink-0">
           {onFeedback && (
             <button 
               onClick={onFeedback}
-              className="p-3 hover:bg-white/10 rounded-2xl transition-all active:scale-95 group"
+              className="p-2 sm:p-3 hover:bg-white/10 rounded-xl sm:rounded-2xl transition-all active:scale-95 group"
               title="Share Feedback"
             >
               <MessageSquare className="w-5 h-5 text-slate-300 group-hover:text-white" />
@@ -198,7 +224,7 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ userProfile, onClose
           {onLogout && (
             <button 
               onClick={onLogout}
-              className="p-3 hover:bg-white/10 rounded-2xl transition-all active:scale-95 group"
+              className="p-2 sm:p-3 hover:bg-white/10 rounded-xl sm:rounded-2xl transition-all active:scale-95 group"
               title="Logout"
             >
               <LogOut className="w-5 h-5 text-slate-300 group-hover:text-white" />
@@ -206,20 +232,21 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({ userProfile, onClose
           )}
           <button 
             onClick={onClose}
-            className="p-3 bg-white/10 hover:bg-white/20 rounded-2xl transition-all active:scale-95 border border-white/10"
+            className="p-2 sm:p-3 bg-white/10 hover:bg-white/20 rounded-xl sm:rounded-2xl transition-all active:scale-95 border border-white/10"
+            title="Back to Welcome Screen"
           >
-            <ChevronLeft className="w-6 h-6" />
+            <ChevronLeft className="w-5 h-5 sm:w-6 sm:h-6" />
           </button>
         </div>
       </div>
 
-      <div className="p-6 sm:p-10 space-y-10 sm:space-y-12 max-h-[85vh] overflow-y-auto custom-scrollbar bg-slate-50/30">
-        <div className="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm flex items-center gap-6 group">
-          <div className="w-14 h-14 bg-indigo-50 text-indigo-600 rounded-2xl flex items-center justify-center shadow-inner group-hover:scale-110 transition-transform">
-            <ShieldCheck className="w-8 h-8" />
+      <div className="p-4 sm:p-8 md:p-10 space-y-6 sm:space-y-10 max-h-[85vh] overflow-y-auto custom-scrollbar bg-slate-50/30">
+        <div className="bg-white p-4 sm:p-6 rounded-2xl sm:rounded-3xl border border-slate-100 shadow-sm flex items-center gap-4 sm:gap-6 group">
+          <div className="w-12 h-12 sm:w-14 sm:h-14 bg-indigo-50 text-indigo-600 rounded-xl sm:rounded-2xl flex items-center justify-center shrink-0 shadow-inner group-hover:scale-110 transition-transform">
+            <ShieldCheck className="w-6 h-6 sm:w-8 sm:h-8" />
           </div>
           <div>
-            <h4 className="text-lg font-black text-slate-900 tracking-tight leading-tight">Protected Account</h4>
+            <h4 className="text-base sm:text-lg font-black text-slate-900 tracking-tight leading-tight">Protected Account</h4>
             <p className="text-xs text-slate-500 font-bold mt-0.5">Your student's data is encrypted and secure.</p>
           </div>
         </div>

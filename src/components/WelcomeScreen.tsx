@@ -2,6 +2,8 @@ import React from 'react';
 import { motion } from 'motion/react';
 import { ChevronRight, Lock } from 'lucide-react';
 import starMascotImg from '../assets/images/mathspark_star_mascot_1792262025789.jpg';
+import { SoundService } from '../services/SoundService';
+import { PWAInstallButton } from './PWAInstallPrompt';
 
 interface WelcomeScreenProps {
   onSelectBuddy: () => void;
@@ -13,18 +15,16 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({
   onSelectParent,
 }) => {
   return (
-    <div className="min-h-screen bg-[#F8F9FE] text-slate-900 flex flex-col justify-between items-center relative overflow-hidden px-4 py-6 sm:py-10 select-none">
+    <div className="min-h-[100dvh] w-full bg-[#F8F9FE] text-slate-900 flex flex-col justify-between items-center relative overflow-x-hidden overflow-y-auto px-4 py-5 sm:py-8 md:py-10 select-none">
       {/* South African Flag Geometric Corner Accent - Top Right */}
-      <div className="absolute top-0 right-0 w-32 h-32 sm:w-44 sm:h-44 pointer-events-none z-10">
+      <div className="absolute top-0 right-0 w-24 h-24 sm:w-36 sm:h-36 md:w-44 md:h-44 pointer-events-none z-10">
         <svg viewBox="0 0 160 160" className="w-full h-full" fill="none">
-          {/* Geometric colorful triangles matching South African Flag */}
           <polygon points="160,0 70,0 160,90" fill="#001489" />
           <polygon points="160,15 100,0 160,60" fill="#E03C31" />
           <polygon points="120,0 80,0 160,80" fill="#FFB81C" />
           <polygon points="160,60 115,15 160,105" fill="#007749" />
           <polygon points="140,0 160,0 160,20" fill="#FFB81C" />
           <polygon points="160,95 130,65 160,125" fill="#E03C31" />
-          {/* Dotted border line accent */}
           <line
             x1="50"
             y1="0"
@@ -39,16 +39,14 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({
       </div>
 
       {/* South African Flag Geometric Corner Accent - Bottom Left */}
-      <div className="absolute bottom-0 left-0 w-32 h-32 sm:w-44 sm:h-44 pointer-events-none z-10">
+      <div className="absolute bottom-0 left-0 w-24 h-24 sm:w-36 sm:h-36 md:w-44 md:h-44 pointer-events-none z-10">
         <svg viewBox="0 0 160 160" className="w-full h-full" fill="none">
-          {/* Geometric triangles */}
           <polygon points="0,160 0,70 90,160" fill="#007749" />
           <polygon points="0,145 0,100 60,160" fill="#E03C31" />
           <polygon points="0,120 0,80 80,160" fill="#FFB81C" />
           <polygon points="60,160 15,115 105,160" fill="#001489" />
           <polygon points="0,160 20,160 0,140" fill="#FFB81C" />
           <polygon points="95,160 65,130 125,160" fill="#E03C31" />
-          {/* Dotted border line accent */}
           <line
             x1="0"
             y1="50"
@@ -62,14 +60,12 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({
         </svg>
       </div>
 
-      {/* Background Floating Math Doodles & Watermarks */}
-      <div className="absolute inset-0 pointer-events-none overflow-hidden opacity-35">
-        {/* 1 + 2 = 3 at top left */}
+      {/* Background Floating Math Doodles & Watermarks (hidden on tiny screens to avoid distraction) */}
+      <div className="absolute inset-0 pointer-events-none overflow-hidden opacity-30 hidden sm:block">
         <span className="absolute top-10 left-6 text-xl sm:text-2xl font-black text-indigo-400 rotate-[-18deg] tracking-wider">
           1 + 2 = 3
         </span>
 
-        {/* Floating triangle at top left */}
         <svg
           className="absolute top-28 left-8 w-8 h-8 text-indigo-300 stroke-current fill-none stroke-[2.5]"
           viewBox="0 0 24 24"
@@ -77,7 +73,6 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({
           <polygon points="12,3 22,20 2,20" />
         </svg>
 
-        {/* Floating squiggle at mid-left */}
         <svg
           className="absolute top-64 left-4 w-12 h-6 text-indigo-300 stroke-current fill-none stroke-[2.5]"
           viewBox="0 0 40 20"
@@ -85,12 +80,10 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({
           <path d="M 0,10 Q 10,0 20,10 T 40,10" />
         </svg>
 
-        {/* Plus sign at top right */}
         <span className="absolute top-16 right-36 text-3xl font-black text-indigo-300">
           +
         </span>
 
-        {/* Squiggle at mid right */}
         <svg
           className="absolute top-36 right-6 w-12 h-6 text-indigo-300 stroke-current fill-none stroke-[2.5]"
           viewBox="0 0 40 20"
@@ -98,12 +91,10 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({
           <path d="M 0,10 Q 10,0 20,10 T 40,10" />
         </svg>
 
-        {/* Division sign at right */}
         <span className="absolute top-52 right-10 text-2xl font-black text-indigo-300">
           ÷
         </span>
 
-        {/* Set square ruler at mid-right */}
         <svg
           className="absolute top-64 right-5 w-12 h-12 text-indigo-300 stroke-current fill-none stroke-[2]"
           viewBox="0 0 24 24"
@@ -114,95 +105,81 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({
           <line x1="4" y1="16" x2="12" y2="16" />
         </svg>
 
-        {/* Multiplication at bottom left */}
         <span className="absolute bottom-28 left-36 text-2xl font-black text-indigo-300">
           ×
         </span>
 
-        {/* Squiggle at bottom right */}
         <svg
           className="absolute bottom-24 right-14 w-12 h-6 text-indigo-300 stroke-current fill-none stroke-[2.5]"
           viewBox="0 0 40 20"
         >
           <path d="M 0,10 Q 10,0 20,10 T 40,10" />
         </svg>
+      </div>
 
-        {/* Rays at bottom right */}
-        <div className="absolute bottom-12 right-6 flex gap-1 rotate-[-25deg]">
-          <span className="w-1.5 h-4 bg-amber-400 rounded-full" />
-          <span className="w-1.5 h-5 bg-amber-400 rounded-full" />
-          <span className="w-1.5 h-3 bg-amber-400 rounded-full" />
-        </div>
+      {/* Background Star Mascot - Integrated seamlessly into the backdrop with radial vignette and ambient glow */}
+      <div className="absolute top-2 sm:top-5 md:top-8 left-1/2 -translate-x-1/2 pointer-events-none z-0 flex flex-col items-center">
+        {/* Soft radial backdrop halo */}
+        <div className="absolute inset-0 w-44 h-44 sm:w-64 sm:h-64 -translate-x-4 -translate-y-4 bg-gradient-to-b from-amber-200/35 via-purple-200/20 to-transparent rounded-full blur-2xl -z-10" />
+        
+        <motion.div
+          animate={{ y: [0, -6, 0] }}
+          transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut' }}
+          className="relative"
+        >
+          <img
+            src={starMascotImg}
+            alt="MathSpark Star Mascot Background"
+            style={{
+              maskImage: 'radial-gradient(ellipse at center, rgba(0,0,0,1) 50%, rgba(0,0,0,0) 80%)',
+              WebkitMaskImage: 'radial-gradient(ellipse at center, rgba(0,0,0,1) 50%, rgba(0,0,0,0) 80%)',
+            }}
+            className="w-36 h-36 xs:w-44 xs:h-44 sm:w-52 sm:h-52 md:w-60 md:h-60 object-contain filter drop-shadow-sm mix-blend-multiply select-none opacity-90"
+          />
+        </motion.div>
       </div>
 
       {/* Main Screen Content Card */}
-      <div className="w-full max-w-sm sm:max-w-md mx-auto flex flex-col items-center relative z-20 space-y-4 sm:space-y-6">
+      <div className="w-full max-w-sm sm:max-w-md mx-auto flex flex-col items-center relative z-20 space-y-3 sm:space-y-4 md:space-y-5 my-auto pt-32 xs:pt-38 sm:pt-48 md:pt-54 pb-2">
         
-        {/* Top Mascot Hero Illustration */}
-        <motion.div
-          initial={{ scale: 0.88, opacity: 0, y: -10 }}
-          animate={{ scale: 1, opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, ease: 'easeOut' }}
-          className="relative flex flex-col items-center"
-        >
-          <motion.div
-            animate={{ y: [0, -6, 0] }}
-            transition={{ duration: 3.5, repeat: Infinity, ease: 'easeInOut' }}
-            className="relative"
-          >
-            {/* Mascot Image with soft shadow */}
-            <img
-              src={starMascotImg}
-              alt="MathSpark Star Mascot"
-              className="w-44 h-44 sm:w-56 sm:h-56 object-contain filter drop-shadow-md mix-blend-multiply"
-            />
-          </motion.div>
-        </motion.div>
-
-        {/* MS Icon Badge & MathSpark Title */}
+        {/* MathSpark Title with Golden Spark Rays */}
         <motion.div
           initial={{ opacity: 0, y: 15 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.15, duration: 0.4 }}
-          className="flex flex-col items-center text-center -mt-2 sm:-mt-4"
+          className="flex flex-col items-center text-center mt-1 sm:mt-2"
         >
-          {/* MS Icon App Badge */}
-          <div className="w-14 h-14 sm:w-16 sm:h-16 bg-gradient-to-tr from-[#4B3BF6] via-[#6355F6] to-[#7C6EF8] rounded-2xl sm:rounded-[1.25rem] shadow-lg shadow-indigo-500/30 flex items-center justify-center border-2 border-white/50 mb-3">
-            <span className="text-white font-black text-2xl sm:text-3xl tracking-tight drop-shadow-sm font-sans">
-              MS
-            </span>
-          </div>
 
           {/* MathSpark Title with Golden Spark Rays */}
           <div className="flex items-center justify-center gap-2 sm:gap-3">
             {/* Left Spark Rays */}
             <div className="flex gap-1 items-center rotate-[-20deg]">
-              <span className="w-1 h-3.5 bg-amber-400 rounded-full" />
-              <span className="w-1.5 h-5 bg-amber-400 rounded-full" />
-              <span className="w-1 h-3.5 bg-amber-400 rounded-full" />
+              <span className="w-1 h-3 sm:h-3.5 bg-amber-400 rounded-full" />
+              <span className="w-1.5 h-4 sm:h-5 bg-amber-400 rounded-full" />
+              <span className="w-1 h-3 sm:h-3.5 bg-amber-400 rounded-full" />
             </div>
 
-            <h1 className="text-3xl sm:text-4xl md:text-5xl font-black tracking-tight leading-none">
+            <h1 className="text-2xl sm:text-4xl md:text-5xl font-black tracking-tight leading-none">
               <span className="text-[#1A1D54]">Math</span>
               <span className="text-[#6D28D9]">Spark</span>
             </h1>
 
             {/* Right Spark Rays */}
             <div className="flex gap-1 items-center rotate-[20deg]">
-              <span className="w-1 h-3.5 bg-amber-400 rounded-full" />
-              <span className="w-1.5 h-5 bg-amber-400 rounded-full" />
-              <span className="w-1 h-3.5 bg-amber-400 rounded-full" />
+              <span className="w-1 h-3 sm:h-3.5 bg-amber-400 rounded-full" />
+              <span className="w-1.5 h-4 sm:h-5 bg-amber-400 rounded-full" />
+              <span className="w-1 h-3 sm:h-3.5 bg-amber-400 rounded-full" />
             </div>
           </div>
 
           {/* Tagline with Yellow Swoosh Underline */}
           <div className="mt-1 relative inline-block">
-            <p className="text-[#1A1D54] font-bold text-sm sm:text-base italic tracking-tight">
+            <p className="text-[#1A1D54] font-bold text-xs sm:text-sm md:text-base italic tracking-tight">
               Your fun math learning companion!
             </p>
             {/* Curved yellow swoosh underline */}
             <svg
-              className="w-full h-3 sm:h-3.5 -mt-0.5 text-amber-400 fill-none"
+              className="w-full h-2.5 sm:h-3.5 -mt-0.5 text-amber-400 fill-none"
               viewBox="0 0 240 12"
               preserveAspectRatio="none"
             >
@@ -221,44 +198,47 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ delay: 0.25 }}
-          className="w-full flex items-center justify-center gap-2 pt-2 sm:pt-4"
+          className="w-full flex items-center justify-center gap-2 pt-1 sm:pt-3"
         >
           {/* Left energetic spark dashes */}
           <div className="flex gap-1 items-center">
-            <span className="w-2.5 h-1 bg-amber-400 rounded-full rotate-[-20deg]" />
-            <span className="w-3.5 h-1 bg-teal-400 rounded-full" />
-            <span className="w-2.5 h-1 bg-amber-400 rounded-full rotate-[20deg]" />
+            <span className="w-2 h-1 bg-amber-400 rounded-full rotate-[-20deg]" />
+            <span className="w-3 h-1 bg-teal-400 rounded-full" />
+            <span className="w-2 h-1 bg-amber-400 rounded-full rotate-[20deg]" />
           </div>
 
-          <h2 className="text-[#1A1D54] text-xs sm:text-sm font-black uppercase tracking-[0.2em] px-1">
+          <h2 className="text-[#1A1D54] text-[11px] sm:text-xs md:text-sm font-black uppercase tracking-[0.2em] px-1">
             Who's Learning Today?
           </h2>
 
           {/* Right energetic spark dashes */}
           <div className="flex gap-1 items-center">
-            <span className="w-2.5 h-1 bg-amber-400 rounded-full rotate-[20deg]" />
-            <span className="w-3.5 h-1 bg-teal-400 rounded-full" />
-            <span className="w-2.5 h-1 bg-amber-400 rounded-full rotate-[-20deg]" />
+            <span className="w-2 h-1 bg-amber-400 rounded-full rotate-[20deg]" />
+            <span className="w-3 h-1 bg-teal-400 rounded-full" />
+            <span className="w-2 h-1 bg-amber-400 rounded-full rotate-[-20deg]" />
           </div>
         </motion.div>
 
         {/* Selection Cards (Buddy & Parent) */}
-        <div className="w-full space-y-3.5 sm:space-y-4 pt-1">
+        <div className="w-full space-y-3 sm:space-y-4 pt-1">
           {/* 1. BUDDY CARD (PLAY & LEARN) */}
           <motion.button
             whileHover={{ scale: 1.02, translateY: -2 }}
             whileTap={{ scale: 0.98 }}
-            onClick={onSelectBuddy}
-            className="w-full p-4 sm:p-5 bg-gradient-to-r from-[#2072ED] via-[#4F46E5] to-[#7C3AED] rounded-3xl shadow-xl shadow-indigo-500/25 text-white flex items-center justify-between transition-all group relative overflow-hidden border border-white/20 text-left"
+            onClick={() => {
+              SoundService.playTap(2);
+              onSelectBuddy();
+            }}
+            className="w-full p-3.5 sm:p-5 bg-gradient-to-r from-[#2072ED] via-[#4F46E5] to-[#7C3AED] rounded-2xl sm:rounded-3xl shadow-xl shadow-indigo-500/25 text-white flex items-center justify-between transition-all group relative overflow-hidden border border-white/20 text-left cursor-pointer min-h-[68px] sm:min-h-[84px]"
           >
             {/* Background subtle glow */}
             <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full blur-2xl -translate-y-1/2 translate-x-1/2 pointer-events-none" />
 
-            <div className="flex items-center gap-4 relative z-10">
+            <div className="flex items-center gap-3 sm:gap-4 relative z-10">
               {/* Rocket in glowing circle */}
-              <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-white/15 backdrop-blur-sm border border-white/25 flex items-center justify-center shrink-0 shadow-inner group-hover:scale-105 transition-transform">
+              <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-xl sm:rounded-2xl bg-white/15 backdrop-blur-sm border border-white/25 flex items-center justify-center shrink-0 shadow-inner group-hover:scale-105 transition-transform">
                 <svg
-                  className="w-9 h-9 sm:w-10 sm:h-10 text-white fill-white"
+                  className="w-8 h-8 sm:w-10 sm:h-10 text-white fill-white"
                   viewBox="0 0 64 64"
                 >
                   <path
@@ -285,24 +265,24 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({
 
               {/* Title & Subtitle */}
               <div className="text-left">
-                <h3 className="text-2xl sm:text-3xl font-black tracking-tight text-white leading-tight">
+                <h3 className="text-xl sm:text-2xl md:text-3xl font-black tracking-tight text-white leading-tight">
                   Buddy
                 </h3>
-                <p className="text-[11px] sm:text-xs font-black tracking-widest text-cyan-200 uppercase mt-0.5">
+                <p className="text-[10px] sm:text-xs font-black tracking-widest text-cyan-200 uppercase mt-0.5">
                   Play & Learn
                 </p>
               </div>
             </div>
 
             {/* Stars & Arrow on Right */}
-            <div className="flex items-center gap-3 relative z-10">
+            <div className="flex items-center gap-2 sm:gap-3 relative z-10">
               <div className="flex items-center gap-0.5 text-amber-300">
-                <span className="text-sm sm:text-base">★</span>
-                <span className="text-sm sm:text-base">★</span>
-                <span className="text-sm sm:text-base">★</span>
+                <span className="text-xs sm:text-base">★</span>
+                <span className="text-xs sm:text-base">★</span>
+                <span className="text-xs sm:text-base">★</span>
               </div>
-              <div className="w-8 h-8 rounded-full flex items-center justify-center text-white group-hover:translate-x-1 transition-transform">
-                <ChevronRight className="w-6 h-6 stroke-[3]" />
+              <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center text-white group-hover:translate-x-1 transition-transform">
+                <ChevronRight className="w-5 h-5 sm:w-6 sm:h-6 stroke-[3]" />
               </div>
             </div>
           </motion.button>
@@ -311,40 +291,44 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({
           <motion.button
             whileHover={{ scale: 1.02, translateY: -2 }}
             whileTap={{ scale: 0.98 }}
-            onClick={onSelectParent}
-            className="w-full p-4 sm:p-5 bg-white rounded-3xl shadow-lg shadow-indigo-100/70 border-2 border-indigo-100/90 text-slate-800 flex items-center justify-between transition-all group relative overflow-hidden text-left"
+            onClick={() => {
+              SoundService.playTap(0);
+              onSelectParent();
+            }}
+            className="w-full p-3.5 sm:p-5 bg-white rounded-2xl sm:rounded-3xl shadow-lg shadow-indigo-100/70 border-2 border-indigo-100/90 text-slate-800 flex items-center justify-between transition-all group relative overflow-hidden text-left cursor-pointer min-h-[68px] sm:min-h-[84px]"
           >
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-3 sm:gap-4">
               {/* Purple lock in rounded square */}
-              <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-indigo-50 border border-indigo-100 flex items-center justify-center shrink-0 shadow-inner group-hover:scale-105 transition-transform relative">
-                <Lock className="w-7 h-7 sm:w-8 sm:h-8 text-[#6D28D9] stroke-[2.2]" />
+              <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-xl sm:rounded-2xl bg-indigo-50 border border-indigo-100 flex items-center justify-center shrink-0 shadow-inner group-hover:scale-105 transition-transform relative">
+                <Lock className="w-6 h-6 sm:w-8 sm:h-8 text-[#6D28D9] stroke-[2.2]" />
                 <span className="absolute -top-1 -right-1 w-2 h-2 bg-purple-400 rounded-full blur-[1px]" />
                 <span className="absolute -bottom-1 -left-1 w-2 h-2 bg-indigo-400 rounded-full blur-[1px]" />
               </div>
 
               {/* Title & Subtitle */}
               <div className="text-left">
-                <h3 className="text-2xl sm:text-3xl font-black tracking-tight text-[#1A1D54] leading-tight">
+                <h3 className="text-xl sm:text-2xl md:text-3xl font-black tracking-tight text-[#1A1D54] leading-tight">
                   Parent
                 </h3>
-                <p className="text-[11px] sm:text-xs font-black tracking-widest text-[#6D28D9] uppercase mt-0.5">
+                <p className="text-[10px] sm:text-xs font-black tracking-widest text-[#6D28D9] uppercase mt-0.5">
                   Portal & Progress
                 </p>
               </div>
             </div>
 
             {/* Right Purple Arrow */}
-            <div className="w-8 h-8 rounded-full flex items-center justify-center text-[#6D28D9] group-hover:translate-x-1 transition-transform">
-              <ChevronRight className="w-6 h-6 stroke-[3]" />
+            <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center text-[#6D28D9] group-hover:translate-x-1 transition-transform">
+              <ChevronRight className="w-5 h-5 sm:w-6 sm:h-6 stroke-[3]" />
             </div>
           </motion.button>
         </div>
       </div>
 
-      {/* South African Grade 4 CAPS badge at bottom */}
-      <div className="mt-4 text-center z-20">
-        <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 flex items-center justify-center gap-1.5">
-          <span>🇿🇦</span> 100% South African CAPS Grade 4 Mathematics
+      {/* South African Grade 4 CAPS badge & Install App option */}
+      <div className="mt-3 sm:mt-4 text-center z-20 pb-1 flex flex-col items-center gap-2">
+        <PWAInstallButton variant="minimal" />
+        <p className="text-[9px] sm:text-[10px] font-black uppercase tracking-widest text-slate-400 flex items-center justify-center gap-1.5">
+          <span>🇿🇦</span> 100% South African CAPS Grade 4 Mathematics • Web & App
         </p>
       </div>
     </div>

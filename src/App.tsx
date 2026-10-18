@@ -45,6 +45,8 @@ import { auth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signO
 import { SessionSummary } from './components/SessionSummary';
 import { FeedbackModal } from './components/FeedbackModal';
 import { DailyGoalBanner } from './components/DailyGoalBanner';
+import { PWAInstallButton, PWAInstallBanner } from './components/PWAInstallPrompt';
+import { OfflineIndicator } from './components/OfflineIndicator';
 
 export const ViewContainer: React.FC<{ children: React.ReactNode }> = ({ children }) => (
   <motion.div
@@ -233,44 +235,126 @@ export default function App() {
     return () => unsubscribe();
   }, []);
 
+  const handleDemoOrLocalLogin = (role: 'buddy' | 'parent', customEmail?: string, customName?: string) => {
+    setIsLoggingIn(true);
+    setAuthError('');
+    const cleanEmail = (customEmail || (role === 'buddy' ? 'learner@mathspark.co.za' : 'parent@mathspark.co.za')).trim().toLowerCase();
+    const cleanUid = `user_${role}_${cleanEmail.replace(/[^a-zA-Z0-9]/g, '_')}`;
+    let stored = ProgressService.getLocalProfile(cleanUid);
+    if (!stored) {
+      stored = {
+        uid: cleanUid,
+        email: cleanEmail,
+        role,
+        buddyData: role === 'buddy' ? {
+          name: customName?.trim() || (role === 'buddy' ? 'Sipho' : 'Parent'),
+          avatar: '🦁',
+          stars: 25,
+          streak: 2,
+          bestStreak: 4,
+          difficulty: Difficulty.EASY,
+          totalQuestions: 15,
+          correctAnswers: 13,
+          topicPerformance: {
+            [Operation.ADDITION]: { correct: 8, total: 9 },
+            [Operation.MULTIPLICATION]: { correct: 5, total: 6 },
+          },
+          badges: ['Math Explorer', 'Speed Demon'],
+          weakAreas: ProgressService.getDefaultWeakAreas(),
+          unlockedAvatars: ['🦁', '🐘', '🦏', '🐆', '🐃', '🦓'],
+          lastPlayedDate: new Date().toISOString().split('T')[0],
+          lastDailyChallengeDate: '',
+          dailyChallengeStreak: 1,
+          dailyLearningStreak: 2,
+          dailyGoal: 5,
+          questionsToday: 2,
+          enabledOperations: Object.values(Operation),
+          currentTerm: Term.TERM_1,
+          isPro: false,
+          parentPassword: '1234',
+        } : undefined,
+        buddyUids: role === 'parent' ? ['user_buddy_learner_mathspark_co_za', 'guest_learner'] : undefined,
+      };
+      localStorage.setItem(`user_profile_${cleanUid}`, JSON.stringify(stored));
+    }
+    setUserProfile(stored);
+    setLoginRole(null);
+    setIsLoggingIn(false);
+    setView(role === 'parent' ? 'parent' : 'welcome');
+  };
+
   const handleEmailAuth = async (e: React.FormEvent) => {
     e.preventDefault();
     if (isLoggingIn) return;
     setIsLoggingIn(true);
     setAuthError('');
     setResetSent(false);
+
+    const cleanEmail = email.trim().toLowerCase();
+    const cleanRole = loginRole || 'buddy';
+
     try {
       let userCredential;
       if (isSignUp) {
-        userCredential = await createUserWithEmailAndPassword(auth, email, password);
-        // If we have a loginRole, create the profile immediately to avoid the extra step
-        if (loginRole) {
-          const profile = await ProgressService.createUserProfile(
-            userCredential.user.uid, 
-            userCredential.user.email!, 
-            loginRole, 
-            nameInput || userCredential.user.displayName || ''
-          );
-          setUserProfile(profile);
-          setView(loginRole === 'parent' ? 'parent' : 'welcome');
-        }
+        userCredential = await createUserWithEmailAndPassword(auth, cleanEmail, password);
+        const displayName = nameInput.trim() || userCredential.user.displayName || (cleanRole === 'buddy' ? 'Grade 4 Champ' : 'Parent');
+        const profile = await ProgressService.createUserProfile(
+          userCredential.user.uid, 
+          userCredential.user.email!, 
+          cleanRole, 
+          displayName
+        );
+        setUser(userCredential.user);
+        setUserProfile(profile);
+        setLoginRole(null);
+        setView(cleanRole === 'parent' ? 'parent' : 'welcome');
       } else {
-        await signInWithEmailAndPassword(auth, email, password);
+        userCredential = await signInWithEmailAndPassword(auth, cleanEmail, password);
+        setUser(userCredential.user);
+
+        // Load existing profile or create one if this is their first time
+        let profile = await ProgressService.getUserProfile(userCredential.user.uid);
+        if (!profile) {
+          profile = await ProgressService.createUserProfile(
+            userCredential.user.uid,
+            userCredential.user.email!,
+            cleanRole,
+            userCredential.user.displayName || (cleanRole === 'buddy' ? 'Grade 4 Champ' : 'Parent')
+          );
+        }
+        setUserProfile(profile);
+        setLoginRole(null);
+        setView(profile.role === 'parent' ? 'parent' : 'welcome');
       }
     } catch (error: any) {
+      console.error('Auth error:', error);
+      
+      // If Firebase Auth backend is in offline mode or restricted, fallback seamlessly to offline/local profile!
+      if (
+        error.code === 'auth/operation-not-allowed' || 
+        error.code === 'auth/configuration-not-found' ||
+        error.code === 'auth/network-request-failed' ||
+        error.message?.includes('identity provider configuration is not found')
+      ) {
+        console.info('Switching to offline/demo profile for account:', cleanEmail);
+        handleDemoOrLocalLogin(cleanRole, cleanEmail, nameInput);
+        return;
+      }
+
       if (error.code === 'auth/email-already-in-use') {
-        setAuthError('This email is already registered! Try signing in instead.');
-      } else if (error.code === 'auth/invalid-credential' || error.code === 'auth/wrong-password' || error.code === 'auth/user-not-found') {
-        setAuthError('Oops! That password or email doesn\'t look right. Please check and try again!');
+        setAuthError('This email is already registered! Please switch to "Log In" above.');
+      } else if (error.code === 'auth/invalid-credential' || error.code === 'auth/wrong-password') {
+        setAuthError('Incorrect email or password. Please double-check or try demo login below!');
+      } else if (error.code === 'auth/user-not-found') {
+        setAuthError('No account found with this email. Switch to "Create Account" above to register!');
       } else if (error.code === 'auth/invalid-email') {
         setAuthError('Please enter a valid email address.');
       } else if (error.code === 'auth/weak-password') {
-        setAuthError('Your secret code needs to be at least 6 characters long.');
-      } else if (error.code === 'auth/operation-not-allowed') {
-        setAuthError('Login is currently disabled. Please contact support.');
+        setAuthError('Your secret password must be at least 6 characters long.');
+      } else if (error.code === 'auth/too-many-requests') {
+        setAuthError('Too many attempts. Please wait a moment or try offline mode.');
       } else {
-        console.error('Auth failed', error);
-        setAuthError('Something went wrong. Please try again in a moment!');
+        setAuthError(error.message || 'Login failed. You can use the Demo Access button below to continue.');
       }
     } finally {
       setIsLoggingIn(false);
@@ -279,15 +363,17 @@ export default function App() {
 
   const handleLogout = async () => {
     try {
-      await signOut(auth);
-      setUser(null);
-      setUserProfile(null);
-      setView('welcome');
-      setShowLogin(false);
-      setLoginRole(null);
+      if (user) {
+        await signOut(auth);
+      }
     } catch (error) {
       console.error('Logout failed', error);
     }
+    setUser(null);
+    setUserProfile(null);
+    setView('role-selection');
+    setShowLogin(false);
+    setLoginRole(null);
   };
 
   const handleResetPassword = async () => {
@@ -416,11 +502,55 @@ export default function App() {
 
   const handleCreateProfile = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!nameInput.trim() || !user) return;
-    const updatedProfile = { ...profile!, name: nameInput.trim(), avatar: selectedAvatar };
-    await ProgressService.updateBuddyProfile(user.uid, updatedProfile);
-    setUserProfile(prev => prev ? { ...prev, buddyData: updatedProfile } : null);
+    const cleanName = nameInput.trim() || 'Grade 4 Champ';
+    const activeUid = user?.uid || userProfile?.uid || 'guest_learner';
+    const currentBuddy = profile || userProfile?.buddyData;
+
+    const newBuddyData: BuddyProfile = {
+      ...(currentBuddy || {}),
+      name: cleanName,
+      avatar: selectedAvatar,
+      stars: currentBuddy?.stars ?? 10,
+      streak: currentBuddy?.streak ?? 0,
+      bestStreak: currentBuddy?.bestStreak ?? 0,
+      difficulty: currentBuddy?.difficulty ?? Difficulty.EASY,
+      totalQuestions: currentBuddy?.totalQuestions ?? 0,
+      correctAnswers: currentBuddy?.correctAnswers ?? 0,
+      topicPerformance: currentBuddy?.topicPerformance ?? {},
+      badges: currentBuddy?.badges ?? ['Math Explorer'],
+      weakAreas: currentBuddy?.weakAreas ?? ProgressService.getDefaultWeakAreas(),
+      unlockedAvatars: currentBuddy?.unlockedAvatars ?? ['🦁', '🐘', '🦏', '🐆', '🐃', '🦓'],
+      lastPlayedDate: new Date().toISOString().split('T')[0],
+      lastDailyChallengeDate: '',
+      dailyChallengeStreak: 0,
+      dailyLearningStreak: 1,
+      dailyGoal: 5,
+      questionsToday: 0,
+      enabledOperations: currentBuddy?.enabledOperations ?? Object.values(Operation),
+      currentTerm: currentBuddy?.currentTerm ?? Term.TERM_1,
+      isPro: false,
+      parentPassword: '1234',
+    };
+
+    if (user) {
+      try {
+        await ProgressService.updateBuddyProfile(activeUid, newBuddyData);
+      } catch (err) {
+        console.warn('Could not sync profile to Firebase, continuing locally:', err);
+      }
+    }
+
+    const updatedUser: UserProfile = {
+      uid: activeUid,
+      email: user?.email || userProfile?.email || 'learner@mathspark.local',
+      role: 'buddy',
+      buddyData: newBuddyData
+    };
+
+    localStorage.setItem(`user_profile_${activeUid}`, JSON.stringify(updatedUser));
+    setUserProfile(updatedUser);
     SoundService.playLevelUp();
+    setView('welcome');
   };
 
   const getWeightedOperations = useCallback(() => {
@@ -615,12 +745,13 @@ export default function App() {
     }
     setUser(null);
     setUserProfile(null);
-    setView('welcome');
+    setView('role-selection');
     setShowLogin(false);
     setLoginRole(null);
   };
 
   const handleStartGuestPlay = () => {
+    setLoginRole(null);
     const stored = ProgressService.getLocalProfile('guest_learner');
     if (stored && stored.buddyData) {
       setUserProfile(stored);
@@ -667,34 +798,21 @@ export default function App() {
     );
   }
 
-  if (!user && !userProfile) {
-    if (!loginRole) {
-      return (
-        <WelcomeScreen
-          onSelectBuddy={() => {
-            setLoginRole('buddy');
-            setIsSignUp(false);
-            setAuthError('');
-          }}
-          onSelectParent={() => {
-            setLoginRole('parent');
-            setIsSignUp(false);
-            setAuthError('');
-          }}
-        />
-      );
-    }
-
+  // If a login role is chosen, show the Auth Form
+  if (loginRole) {
     const isBuddyLogin = loginRole === 'buddy';
 
     return (
-      <div className={`min-h-screen flex items-center justify-center p-4 sm:p-6 bg-[#F8F9FE]`}>
-        <motion.div 
-          initial={{ y: 20, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          className="bg-white p-6 sm:p-10 rounded-[2.5rem] sm:rounded-[3.5rem] shadow-2xl border-4 sm:border-8 border-indigo-100 w-full max-w-md relative overflow-hidden"
-        >
-          <div className="absolute top-0 left-0 w-full h-2.5 bg-gradient-to-r from-spark-primary via-spark-secondary to-spark-accent" />
+      <div className="min-h-[100dvh] w-full flex flex-col justify-between bg-[#F8F9FE]">
+        <PWAInstallBanner />
+        <OfflineIndicator />
+        <div className="flex-1 flex items-center justify-center p-3 sm:p-6 overflow-y-auto">
+          <motion.div 
+            initial={{ y: 20, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            className="bg-white p-5 sm:p-8 md:p-10 rounded-[2rem] sm:rounded-[3rem] shadow-2xl border-2 sm:border-4 border-indigo-100 w-full max-w-md relative overflow-hidden my-auto max-h-[96vh] overflow-y-auto"
+          >
+            <div className="absolute top-0 left-0 w-full h-2.5 bg-gradient-to-r from-spark-primary via-spark-secondary to-spark-accent" />
           
           {/* Back button to Welcome Screen */}
           <button 
@@ -817,9 +935,18 @@ export default function App() {
             )}
 
             {authError && (
-              <p className="p-3 bg-rose-50 text-rose-600 text-xs font-black rounded-xl border border-rose-200 text-center">
-                {authError}
-              </p>
+              <div className="space-y-2">
+                <p className="p-3 bg-rose-50 text-rose-600 text-xs font-black rounded-xl border border-rose-200 text-center">
+                  {authError}
+                </p>
+                <button
+                  type="button"
+                  onClick={() => handleDemoOrLocalLogin(isBuddyLogin ? 'buddy' : 'parent', email, nameInput)}
+                  className="w-full py-2.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-xs font-black rounded-xl border border-indigo-200 transition-colors flex items-center justify-center gap-1.5"
+                >
+                  <span>⚡</span> Continue in Demo/Offline Mode with this account
+                </button>
+              </div>
             )}
 
             <button
@@ -835,18 +962,35 @@ export default function App() {
                   )}
             </button>
 
-            {/* Quick Guest Play for Buddy */}
-            {isBuddyLogin && (
-              <div className="pt-2">
+            {/* Quick 1-Click Demo / Guest Options */}
+            <div className="pt-2 flex flex-col gap-2">
+              {isBuddyLogin ? (
+                <>
+                  <button
+                    type="button"
+                    onClick={() => handleDemoOrLocalLogin('buddy')}
+                    className="w-full py-3 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-black text-xs sm:text-sm rounded-2xl border-2 border-indigo-200 transition-all flex items-center justify-center gap-2"
+                  >
+                    <span>⚡</span> 1-Click Demo Learner (Instant Login)
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleStartGuestPlay}
+                    className="w-full py-2.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 font-black text-xs rounded-2xl border border-emerald-200 transition-all flex items-center justify-center gap-2"
+                  >
+                    <span>🚀</span> Play as Guest (No Email Needed)
+                  </button>
+                </>
+              ) : (
                 <button
                   type="button"
-                  onClick={handleStartGuestPlay}
-                  className="w-full py-3 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 font-black text-xs sm:text-sm rounded-2xl border-2 border-emerald-200 transition-all flex items-center justify-center gap-2"
+                  onClick={() => handleDemoOrLocalLogin('parent')}
+                  className="w-full py-3 bg-purple-50 hover:bg-purple-100 text-[#6D28D9] font-black text-xs sm:text-sm rounded-2xl border-2 border-purple-200 transition-all flex items-center justify-center gap-2"
                 >
-                  <span>🚀</span> Play as Guest (No Email Needed)
+                  <span>🔒</span> 1-Click Demo Parent Portal (Instant Access)
                 </button>
-              </div>
-            )}
+              )}
+            </div>
 
             {/* Forgot password & Switch Role Links */}
             <div className="flex flex-col gap-2.5 text-center pt-3 border-t border-slate-100">
@@ -874,23 +1018,30 @@ export default function App() {
           </form>
         </motion.div>
       </div>
-    );
-  }
+    </div>
+  );
+}
 
   if (view === 'role-selection') {
     return (
-      <WelcomeScreen
-        onSelectBuddy={() => {
-          setLoginRole('buddy');
-          setIsSignUp(false);
-          setAuthError('');
-        }}
-        onSelectParent={() => {
-          setLoginRole('parent');
-          setIsSignUp(false);
-          setAuthError('');
-        }}
-      />
+      <div className="min-h-screen flex flex-col bg-[#F8F9FE]">
+        <PWAInstallBanner />
+        <OfflineIndicator />
+        <div className="flex-1">
+          <WelcomeScreen
+            onSelectBuddy={() => {
+              setLoginRole('buddy');
+              setIsSignUp(false);
+              setAuthError('');
+            }}
+            onSelectParent={() => {
+              setLoginRole('parent');
+              setIsSignUp(false);
+              setAuthError('');
+            }}
+          />
+        </div>
+      </div>
     );
   }
 
@@ -947,26 +1098,53 @@ export default function App() {
     };
 
     return (
-      <div className="min-h-screen bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 p-4 sm:p-6">
-        <div className="max-w-4xl mx-auto">
-          <ParentPortal 
-            userProfile={parentProfile}
-            onLogout={logout}
-            onFeedback={() => setIsFeedbackOpen(true)}
-            onShare={handleShare}
-            onClose={() => setView('role-selection')}
+      <div className="min-h-screen flex flex-col bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500">
+        <PWAInstallBanner />
+        <OfflineIndicator />
+        <div className="flex-1 p-4 sm:p-6">
+          <div className="max-w-4xl mx-auto">
+            <ParentPortal 
+              userProfile={parentProfile}
+              onLogout={logout}
+              onFeedback={() => setIsFeedbackOpen(true)}
+              onShare={handleShare}
+              onClose={() => setView('role-selection')}
+            />
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (!profile) {
+    return (
+      <div className="min-h-screen flex flex-col bg-[#F8F9FE]">
+        <PWAInstallBanner />
+        <OfflineIndicator />
+        <div className="flex-1">
+          <WelcomeScreen
+            onSelectBuddy={() => {
+              setLoginRole('buddy');
+              setIsSignUp(false);
+              setAuthError('');
+            }}
+            onSelectParent={() => {
+              setLoginRole('parent');
+              setIsSignUp(false);
+              setAuthError('');
+            }}
           />
         </div>
       </div>
     );
   }
 
-  if (!profile) return null;
-
   const buddyMood = session.correctInARow >= 2 ? 'excited' : profile.streak > 0 ? 'happy' : session.wrongInARow > 0 ? 'sad' : 'neutral';
 
   return (
     <div className="min-h-screen flex flex-col max-w-2xl mx-auto pb-24 px-0 sm:px-0">
+      <PWAInstallBanner />
+      <OfflineIndicator />
       {profile && profile.questionsToday < (profile.dailyGoal || 5) && view === 'welcome' && (
         <motion.div 
           initial={{ opacity: 0, height: 0 }}
@@ -992,48 +1170,49 @@ export default function App() {
           Early Access Phase 🇿🇦
         </p>
       </div>
-      <header className="p-4 sm:p-6 flex justify-between items-center bg-white/50 backdrop-blur-sm border-b border-spark-primary/5">
-        <div className="flex items-center gap-3 sm:gap-4">
+      <header className="p-3 sm:p-6 flex justify-between items-center bg-white/50 backdrop-blur-sm border-b border-spark-primary/5 gap-2">
+        <div className="flex items-center gap-2 sm:gap-4 min-w-0">
           <Logo size="sm" showText={false} />
-          <div className="flex items-center gap-2 sm:gap-3">
-            <div className="w-10 h-10 sm:w-12 sm:h-12 bg-white rounded-xl flex items-center justify-center shadow-lg border-2 border-spark-primary/10 text-xl sm:text-2xl relative">
+          <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+            <div className="w-9 h-9 sm:w-12 sm:h-12 bg-white rounded-xl flex items-center justify-center shadow-lg border-2 border-spark-primary/10 text-lg sm:text-2xl relative shrink-0">
               {profile.avatar}
-              <span className="absolute -bottom-1 -right-1 text-[10px]">🇿🇦</span>
+              <span className="absolute -bottom-1 -right-1 text-[9px] sm:text-[10px]">🇿🇦</span>
             </div>
-            <div>
-              <h2 className="font-black text-gray-900 text-sm sm:text-lg leading-none truncate max-w-[100px] sm:max-w-none">{profile.name}</h2>
-              <p className="text-spark-primary text-[8px] sm:text-[10px] font-black uppercase tracking-widest mt-1">Grade 4 Explorer</p>
+            <div className="min-w-0">
+              <h2 className="font-black text-gray-900 text-xs sm:text-lg leading-none truncate max-w-[90px] xs:max-w-[120px] sm:max-w-none">{profile.name}</h2>
+              <p className="text-spark-primary text-[8px] sm:text-[10px] font-black uppercase tracking-widest mt-0.5 sm:mt-1 truncate">Grade 4 Explorer</p>
             </div>
           </div>
         </div>
-        <div className="flex gap-2">
+        <div className="flex items-center gap-1 sm:gap-2 shrink-0">
+          <PWAInstallButton />
           <button 
             onClick={() => setView('shop')}
-            className="p-2.5 sm:p-3 bg-amber-100 text-amber-600 rounded-xl hover:bg-amber-200 transition-colors shadow-sm min-h-[44px] min-w-[44px] flex items-center justify-center"
+            className="p-2 sm:p-3 bg-amber-100 text-amber-600 rounded-xl hover:bg-amber-200 transition-colors shadow-sm min-h-[38px] min-w-[38px] sm:min-h-[44px] sm:min-w-[44px] flex items-center justify-center"
             title="Safari Avatar Shop"
           >
-            <ShoppingBag className="w-5 h-5 sm:w-6 sm:h-6" />
+            <ShoppingBag className="w-4 h-4 sm:w-6 sm:h-6" />
           </button>
           <button 
             onClick={() => setView('role-selection')}
             title="Who's Learning Today? (Switch Role)"
-            className="p-2.5 sm:p-3 bg-indigo-50 text-indigo-600 rounded-xl hover:bg-indigo-100 transition-colors shadow-sm min-h-[44px] min-w-[44px] flex items-center justify-center"
+            className="p-2 sm:p-3 bg-indigo-50 text-indigo-600 rounded-xl hover:bg-indigo-100 transition-colors shadow-sm min-h-[38px] min-w-[38px] sm:min-h-[44px] sm:min-w-[44px] flex items-center justify-center"
           >
-            <Users className="w-5 h-5 sm:w-6 sm:h-6" />
+            <Users className="w-4 h-4 sm:w-6 sm:h-6" />
           </button>
           <button 
             onClick={() => setView('parent')}
             title="Parent & Teacher Portal"
-            className="p-2.5 sm:p-3 bg-slate-100 text-slate-700 rounded-xl hover:bg-slate-200 transition-colors shadow-sm min-h-[44px] min-w-[44px] flex items-center justify-center"
+            className="p-2 sm:p-3 bg-slate-100 text-slate-700 rounded-xl hover:bg-slate-200 transition-colors shadow-sm min-h-[38px] min-w-[38px] sm:min-h-[44px] sm:min-w-[44px] flex items-center justify-center"
           >
-            <UserCheck className="w-5 h-5 sm:w-6 sm:h-6" />
+            <UserCheck className="w-4 h-4 sm:w-6 sm:h-6" />
           </button>
           <button 
             onClick={logout}
-            className="p-2.5 sm:p-3 bg-rose-100 text-rose-500 rounded-xl hover:bg-rose-200 transition-colors shadow-sm min-h-[44px] min-w-[44px] flex items-center justify-center"
+            className="p-2 sm:p-3 bg-rose-100 text-rose-500 rounded-xl hover:bg-rose-200 transition-colors shadow-sm min-h-[38px] min-w-[38px] sm:min-h-[44px] sm:min-w-[44px] flex items-center justify-center"
             title="Switch Learner or Sign In"
           >
-            <LogOut className="w-5 h-5 sm:w-6 sm:h-6" />
+            <LogOut className="w-4 h-4 sm:w-6 sm:h-6" />
           </button>
         </div>
       </header>

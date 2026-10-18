@@ -2,14 +2,30 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0" />
-    <title>MathSpark - South African Grade 4 Math Adventures</title>
-    <meta name="description" content="A CAPS-aligned math learning app for South African Grade 4 students. Fun, adaptive arithmetic practice with local themes, biltong, and Big Five avatars!" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, viewport-fit=cover" />
+    <title>MathSpark - South African Grade 4 Math Adventures 🇿🇦</title>
+    <meta name="description" content="A CAPS-aligned math learning companion for South African Grade 4 students. Fun, adaptive arithmetic practice with local themes, biltong, and Big Five safari avatars!" />
+    
+    <!-- Open Graph & Social Cards -->
+    <meta property="og:title" content="MathSpark - South African Grade 4 Math Adventures 🇿🇦" />
+    <meta property="og:description" content="Fun, adaptive CAPS-aligned math practice for South African Grade 4 learners with safari avatars and parent analytics." />
+    <meta property="og:type" content="website" />
+    
+    <!-- Icons & PWA -->
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="icon" type="image/png" sizes="192x192" href="/pwa-192x192.png" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <link rel="manifest" href="/manifest.json" />
+    
+    <!-- Mobile theme & capabilities -->
     <meta name="theme-color" content="#4f46e5" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-title" content="MathSpark" />
   </head>
-  <body>
+  <body class="bg-[#F8F9FE] text-slate-900 antialiased selection:bg-indigo-100 selection:text-indigo-900">
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
-
