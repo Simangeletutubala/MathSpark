@@ -33,7 +33,6 @@ The project is developed using modern web technologies, including:
 - CSS3
 - Firebase
 
-
 ## Live Application
 
 [Visit MathSpark](https://mathspark.co.za)
