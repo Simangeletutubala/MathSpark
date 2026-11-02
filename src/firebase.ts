@@ -1,18 +1,28 @@
-import { initializeApp } from 'firebase/app';
+import { FirebaseError, initializeApp } from 'firebase/app';
 import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged, User, sendPasswordResetEmail } from 'firebase/auth';
-import { getFirestore, doc, getDoc, setDoc, updateDoc, onSnapshot, collection, query, where, getDocs, getDocFromServer, addDoc, enableMultiTabIndexedDbPersistence } from 'firebase/firestore';
+import { getFirestore, initializeFirestore, persistentLocalCache, persistentMultipleTabManager, doc, getDoc, setDoc, updateDoc, onSnapshot, collection, query, where, getDocs, getDocFromServer, addDoc } from 'firebase/firestore';
 import firebaseConfig from '../firebase-applet-config.json';
 
 // Initialize Firebase SDK
 const app = initializeApp(firebaseConfig);
 
-// Initialize Firestore as recommended
-export const db = getFirestore(app, firebaseConfig.firestoreDatabaseId || '(default)');
-
-// Enable persistence for better resilience in fluctuating environments
-enableMultiTabIndexedDbPersistence(db).catch(() => {
-  // Persistence might fail in some environments (private browsing, multiple tabs), fallback is silent
-});
+// Initialize Firestore with offline persistence and multi-tab coordination.
+const databaseId = firebaseConfig.firestoreDatabaseId || '(default)';
+let db: ReturnType<typeof getFirestore>;
+try {
+  db = initializeFirestore(app, {
+    localCache: persistentLocalCache({
+      tabManager: persistentMultipleTabManager(),
+    }),
+  }, databaseId);
+} catch (error) {
+  if (error instanceof FirebaseError && error.code === 'failed-precondition') {
+    db = getFirestore(app, databaseId);
+  } else {
+    throw error;
+  }
+}
+export { db };
 
 export const auth = getAuth(app);
 
